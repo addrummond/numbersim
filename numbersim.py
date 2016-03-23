@@ -5,13 +5,16 @@ import math
 def powerset_tups(s):
     return (tuple(s[j] for j in range(len(s)) if (i & (1 << j))) for i in range(1 << len(s)))
 
+def gamma(x): return math.factorial(x-1)
+
 def ztnbd(r, beta, k):
     """Zero-truncated negative binomial distribution.
 
-       Equation taken from p. 24 of http://www.measurement.sk/2009/S1/Khurshid.pdf
+       Equation taken from (4) of http://dutangc.free.fr/pub/prob/probdistr-main.pdf
     """
     left = gamma(r+k) / (gamma(r) * math.factorial(k) * (math.pow(r + beta, r) - 1))
     right = math.pow(beta / (1 + beta), k)
+    return left * right
 
 for x in range(1,7):
     print(x, ztnbd(3, 0.6, x))
