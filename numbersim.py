@@ -4,7 +4,7 @@ import math
 import random
 
 MAX_NUMEROSITY = 7
-K = 0.1    
+K = 0.1
 
 def powerset_tups(s):
     return (tuple(s[j] for j in range(len(s)) if (i & (1 << j))) for i in range(1 << len(s)))
@@ -26,6 +26,7 @@ class State:
     def __init__(self, atomic_cues, markers):
         self.markers = markers
         self.assocs = { }
+        self.atomic_cues = atomic_cues
         self.cue_combos = list(islice(powerset_tups(atomic_cues), 1, None))
         for c in self.cue_combos:
             for m in markers:
@@ -42,11 +43,22 @@ def update_state(st, trial):
         delta_vx = K * (1 - vax)
 
         st.assocs[(cues, marker)] = vax
-        st.assocs[((cue,), marker)] += delta_va
-        st.assocs[(others, marker)] += delta_vx
+
+        v1 = st.assocs[((cue,), marker)] + delta_va
+        if v1 < 0:
+            v1 = 0
+        elif v1 > 1:
+            v1 = 1
+        v2 = st.assocs[(others, marker)] + delta_vx
+        if v2 < 0:
+            v2 = 0
+        elif v2 > 1:
+            v2 = 1
+        st.assocs[((cue,), marker)] = v1
+        st.assocs[(others, marker)] = v2
 
 def run_trials(st, trials, output_file_name):
-    rows = [ [ ':'.join(c) + '--' + m for c in st.cue_combos for m in st.markers ] ]
+    rows = [ [ ':'.join(c) + '--' + m for c in st.atomic_cues for m in st.markers ] ]
 
     def add_row():
         r = [ ]
@@ -94,11 +106,12 @@ def gen_trials(language, n):
 
     assert(len(trials) == n)
 
+    random.shuffle(trials)
     return trials
 
 if __name__ == '__main__':
     cues = [str(x) for x in range(1, MAX_NUMEROSITY+1)]
     markers = ['s', 'pl']
-    trials = gen_trials('english', 100)
+    trials = gen_trials('english', 1000)
     st = State(cues, markers)
     run_trials(st, trials, 'test.csv')
