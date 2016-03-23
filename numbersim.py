@@ -4,10 +4,7 @@ import math
 import random
 
 MAX_NUMEROSITY = 7
-K = 0.1
-
-def powerset_tups(s):
-    return (tuple(s[j] for j in range(len(s)) if (i & (1 << j))) for i in range(1 << len(s)))
+K = 0.01
 
 def ztnbd(k, beta, r):
     """Zero-truncated negative binomial distribution.
@@ -27,50 +24,40 @@ class State:
         self.markers = markers
         self.assocs = { }
         self.atomic_cues = atomic_cues
-        self.cue_combos = list(islice(powerset_tups(atomic_cues), 1, None))
-        for c in self.cue_combos:
+        for c in self.atomic_cues:
             for m in markers:
                 self.assocs[(c,m)] = 0
 
 def update_state(st, trial):
     cues, marker = trial
-    for i in range(len(cues)):
-        cue = cues[i]
-        others = tuple((x for x in cues if x != i))
 
-        vax = st.assocs[((cue,), marker)] + st.assocs[(others, marker)]
-        delta_va = K * (1 - vax)
-        delta_vx = K * (1 - vax)
+    vax = 0
+    for cue in cues:
+        vax += st.assocs[(cue, marker)]
+    delta_v = K * (1 - vax)
 
-        st.assocs[(cues, marker)] = vax
+    for cue in cues:
+        st.assocs[(cue, marker)] += delta_v
 
-        v1 = st.assocs[((cue,), marker)] + delta_va
-        if v1 < 0:
-            v1 = 0
-        elif v1 > 1:
-            v1 = 1
-        v2 = st.assocs[(others, marker)] + delta_vx
-        if v2 < 0:
-            v2 = 0
-        elif v2 > 1:
-            v2 = 1
-        st.assocs[((cue,), marker)] = v1
-        st.assocs[(others, marker)] = v2
+        #if len(cues) > 1:
+    #        #delta_v /= len(cues)-1
+    #        for c in others:
+    #            st.assocs[(c,marker)] += delta_v
 
 def run_trials(st, trials, output_file_name):
-    rows = [ [ ':'.join(c) + '--' + m for c in st.atomic_cues for m in st.markers ] ]
+    rows = [ [ 'cues' ] + [ ':'.join(c) + '--' + m for c in st.atomic_cues for m in st.markers ] ]
 
-    def add_row():
-        r = [ ]
-        for c in st.cue_combos:
+    def add_row(t):
+        r = [ '+'.join(t[0]) ]
+        for c in st.atomic_cues:
             for m in st.markers:
                 r.append(st.assocs[(c,m)])
         rows.append(r)
 
     for t in trials:
-        add_row()
+        add_row(t)
         update_state(st, t)
-    add_row()
+    add_row(('',))
 
     with open(output_file_name, 'w', encoding='utf-8') as csvfile:
         w = csv.writer(csvfile)
