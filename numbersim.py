@@ -1,6 +1,9 @@
 import csv
 from itertools import *
 import math
+import random
+
+MAX_NUMEROSITY = 7
 
 def powerset_tups(s):
     return (tuple(s[j] for j in range(len(s)) if (i & (1 << j))) for i in range(1 << len(s)))
@@ -63,12 +66,40 @@ def run_trials(st, trials, output_file_name):
         for r in rows:
             w.writerow(r)
 
-CUES = ['c1', 'c2', 'c3']
-MARKERS = ['foo', 'bar', 'amp']
-TRIALS = [
-    (('c1', 'c2'), 'foo'),
-    (('c2',), 'bar'),
-    (('c3',), 'amp')
-]
-st = State(CUES, MARKERS)
-run_trials(st, TRIALS, 'test.csv')
+def marker_for_n(language, n):
+    if language == 'english':
+        return 's' if n == 1 else 'pl'
+
+def gen_trials(language, n):
+    ns = [ ]
+    for i in range(1, MAX_NUMEROSITY+1):
+        ns.append(int(round(ztnbd(i, 0.6, 3) * n)))
+
+    trials = [ ]
+    for i in range(1, len(ns)+1):
+        ntrials = ns[i-1]
+        for k in range(ntrials):
+            cues = tuple((str(x) for x in range(1,i+1)))
+            marker = marker_for_n(language, i)
+            trials.append((cues, marker))
+
+    remainder = n - len(trials)
+    if remainder < 0:
+        trials = trials[:remainder]
+    elif remainder > 0:
+        for i in range(remainder):
+            num = int(round(random.random() * MAX_NUMEROSITY))
+            cues = tuple((str(x) for x in range(1,num+1)))
+            marker = marker_for_n(language, num)
+            trials.append((cues, marker))
+
+    assert(len(trials) == n)
+
+    return trials
+
+if __name__ == '__main__':
+    cues = [str(x) for x in range(1, MAX_NUMEROSITY+1)]
+    markers = ['s', 'pl']
+    trials = gen_trials('english', 100)
+    st = State(cues, markers)
+    run_trials(st, trials, 'test.csv')
