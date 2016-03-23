@@ -1,8 +1,20 @@
 import csv
 from itertools import *
+import math
 
 def powerset_tups(s):
     return (tuple(s[j] for j in range(len(s)) if (i & (1 << j))) for i in range(1 << len(s)))
+
+def ztnbd(r, beta, k):
+    """Zero-truncated negative binomial distribution.
+
+       Equation taken from p. 24 of http://www.measurement.sk/2009/S1/Khurshid.pdf
+    """
+    left = gamma(r+k) / (gamma(r) * math.factorial(k) * (math.pow(r + beta, r) - 1))
+    right = math.pow(beta / (1 + beta), k)
+
+for x in range(1,7):
+    print(x, ztnbd(3, 0.6, x))
 
 class State:
     def __init__(self, atomic_cues, markers):
@@ -13,6 +25,8 @@ class State:
             for m in markers:
                 self.assocs[(c,m)] = 0
 
+K = 0.1
+
 def update_state(st, trial):
     cues, marker = trial
     for i in range(len(cues)):
@@ -20,8 +34,8 @@ def update_state(st, trial):
         others = tuple((x for x in cues if x != i))
 
         vax = st.assocs[((cue,), marker)] + st.assocs[(others, marker)]
-        delta_va = 1 - vax
-        delta_vx = 1 - vax
+        delta_va = K * (1 - vax)
+        delta_vx = K * (1 - vax)
 
         st.assocs[(cues, marker)] = vax
         st.assocs[((cue,), marker)] += delta_va
