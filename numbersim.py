@@ -4,6 +4,7 @@ import math
 import random
 
 MAX_NUMEROSITY = 7
+K = 0.1    
 
 def powerset_tups(s):
     return (tuple(s[j] for j in range(len(s)) if (i & (1 << j))) for i in range(1 << len(s)))
@@ -29,8 +30,6 @@ class State:
         for c in self.cue_combos:
             for m in markers:
                 self.assocs[(c,m)] = 0
-
-K = 0.1
 
 def update_state(st, trial):
     cues, marker = trial
