@@ -3,7 +3,7 @@ from itertools import *
 import math
 import random
 
-MAX_NUMEROSITY = 2
+MAX_NUMEROSITY = 7
 K = 0.1
 BETA=0.6
 SIZE=3
@@ -39,8 +39,9 @@ def update_state(st, trial):
         for cue in tcues:
             vax += st.assocs[(cue, m)]
 
+        delta_v = K * ((l*1) - vax)
+
         for cue in tcues:
-            delta_v = K * ((l*1) - vax)
             st.assocs[(cue, m)] += delta_v
 
     for m in st.markers:
@@ -71,11 +72,6 @@ def marker_for_n(language, n):
         return 's' if n == 1 else 'pl'
 
 def gen_trials(language, n):
-    #ns = [ ]
-    #for i in range(n):
-    #    ns.append((('1',), 's'))
-    #return ns
-
     ns = [ ]
     for i in range(1, MAX_NUMEROSITY+1):
         ns.append(int(round(ztnbd(i, BETA, SIZE) * n)))
@@ -111,4 +107,3 @@ if __name__ == '__main__':
     trials = gen_trials('english', 1000)
     st = State(cues, markers)
     run_trials(st, trials, 'test.csv')
-    print(st.assocs)
