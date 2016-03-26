@@ -2,6 +2,10 @@ import csv
 from itertools import *
 import math
 import random
+import sys
+
+LANGUAGE = 'english' if len(sys.argv) < 2 else sys.argv[1]
+print("Language:", LANGUAGE)
 
 MAX_NUMEROSITY = 7
 K = 0.1
@@ -48,10 +52,10 @@ def update_state(st, trial):
         upd(m, 1 if m == marker else 0)
 
 def run_trials(st, trials, output_file_name):
-    rows = [ [ 'cues', 'marker' ] + [ '+'.join(st.atomic_cues[:i+1]) + '--' + m for i in range(len(st.atomic_cues)) for m in st.markers ] ]
+    rows = [ [ 'cues', 'marker' ] + [ '{' + ''.join(st.atomic_cues[:i+1]) + '}-' + m for i in range(len(st.atomic_cues)) for m in st.markers ] ]
 
     def add_row(t):
-        r = [ '+'.join(t[0]), t[1] ]
+        r = [ '{' + ''.join(t[0]) + '}', t[1] ]
         for i in range(len(st.atomic_cues)):
             for m in st.markers:
                 r.append(sum(st.assocs[(st.atomic_cues[j],m)] for j in range(i+1)))
@@ -70,6 +74,8 @@ def run_trials(st, trials, output_file_name):
 def marker_for_n(language, n):
     if language == 'english':
         return 's' if n == 1 else 'pl'
+    elif language == 'dnd':
+        return 'd' if n == 2 else '!d'
 
 def gen_trials(language, n):
     ns = [ ]
@@ -103,7 +109,7 @@ def gen_trials(language, n):
 
 if __name__ == '__main__':
     cues = [str(x) for x in range(1, MAX_NUMEROSITY+1)]
-    markers = ['s', 'pl']
-    trials = gen_trials('english', 1000)
+    markers = list(set([marker_for_n(LANGUAGE, n+1) for n in range(MAX_NUMEROSITY)]))
+    trials = gen_trials(LANGUAGE, 1000)
     st = State(cues, markers)
     run_trials(st, trials, 'test.csv')
