@@ -36,7 +36,6 @@ class State:
 
 def update_state(st, trial):
     tcues, marker = trial
-    other_cues = [cue for cue in st.atomic_cues if cue not in tcues]
 
     def upd(m, l):
         vax = 0
