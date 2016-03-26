@@ -3,8 +3,10 @@ from itertools import *
 import math
 import random
 
-MAX_NUMEROSITY = 7
-K = 0.01
+MAX_NUMEROSITY = 2
+K = 0.1
+BETA=0.6
+SIZE=3
 
 def ztnbd(k, beta, r):
     """Zero-truncated negative binomial distribution.
@@ -29,35 +31,35 @@ class State:
                 self.assocs[(c,m)] = 0
 
 def update_state(st, trial):
-    cues, marker = trial
+    tcues, marker = trial
+    other_cues = [cue for cue in st.atomic_cues if cue not in tcues]
 
-    vax = 0
-    for cue in cues:
-        vax += st.assocs[(cue, marker)]
-    delta_v = K * (1 - vax)
+    def upd(m, l):
+        vax = 0
+        for cue in tcues:
+            vax += st.assocs[(cue, m)]
 
-    for cue in cues:
-        st.assocs[(cue, marker)] += delta_v
+        for cue in tcues:
+            delta_v = K * ((l*1) - vax)
+            st.assocs[(cue, m)] += delta_v
 
-        #if len(cues) > 1:
-    #        #delta_v /= len(cues)-1
-    #        for c in others:
-    #            st.assocs[(c,marker)] += delta_v
+    for m in st.markers:
+        upd(m, 1 if m == marker else 0)
 
 def run_trials(st, trials, output_file_name):
-    rows = [ [ 'cues' ] + [ ':'.join(c) + '--' + m for c in st.atomic_cues for m in st.markers ] ]
+    rows = [ [ 'cues', 'marker' ] + [ '+'.join(st.atomic_cues[:i+1]) + '--' + m for i in range(len(st.atomic_cues)) for m in st.markers ] ]
 
     def add_row(t):
-        r = [ '+'.join(t[0]) ]
-        for c in st.atomic_cues:
+        r = [ '+'.join(t[0]), t[1] ]
+        for i in range(len(st.atomic_cues)):
             for m in st.markers:
-                r.append(st.assocs[(c,m)])
+                r.append(sum(st.assocs[(st.atomic_cues[j],m)] for j in range(i+1)))
         rows.append(r)
 
     for t in trials:
         add_row(t)
         update_state(st, t)
-    add_row(('',))
+    add_row(('',''))
 
     with open(output_file_name, 'w', encoding='utf-8') as csvfile:
         w = csv.writer(csvfile)
@@ -69,15 +71,21 @@ def marker_for_n(language, n):
         return 's' if n == 1 else 'pl'
 
 def gen_trials(language, n):
+    #ns = [ ]
+    #for i in range(n):
+    #    ns.append((('1',), 's'))
+    #return ns
+
     ns = [ ]
     for i in range(1, MAX_NUMEROSITY+1):
-        ns.append(int(round(ztnbd(i, 0.6, 3) * n)))
+        ns.append(int(round(ztnbd(i, BETA, SIZE) * n)))
 
     trials = [ ]
     for i in range(1, len(ns)+1):
         ntrials = ns[i-1]
+        cues = tuple((str(x) for x in range(1,i+1)))
+        assert len(cues) > 0 and len(cues) <= MAX_NUMEROSITY
         for k in range(ntrials):
-            cues = tuple((str(x) for x in range(1,i+1)))
             marker = marker_for_n(language, i)
             trials.append((cues, marker))
 
@@ -86,8 +94,9 @@ def gen_trials(language, n):
         trials = trials[:remainder]
     elif remainder > 0:
         for i in range(remainder):
-            num = int(round(random.random() * MAX_NUMEROSITY))
+            num = int(round(random.random() * (MAX_NUMEROSITY-1)))+1
             cues = tuple((str(x) for x in range(1,num+1)))
+            assert len(cues) > 0 and len(cues) <= MAX_NUMEROSITY
             marker = marker_for_n(language, num)
             trials.append((cues, marker))
 
@@ -102,3 +111,4 @@ if __name__ == '__main__':
     trials = gen_trials('english', 1000)
     st = State(cues, markers)
     run_trials(st, trials, 'test.csv')
+    print(st.assocs)
