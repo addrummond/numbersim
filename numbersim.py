@@ -77,6 +77,26 @@ def marker_for_n(language, n):
         return 's' if n == 1 else 'pl'
     elif language == 'dnd':
         return 'd' if n == 2 else '!d'
+    elif language == 'dingular':
+        return 'u' if n <= 2 else 'pl'
+    elif language == 'tingular':
+        return 't' if n <= 3 else 'pl'
+    elif language == 'spp':
+        if n == 1:
+            return 's'
+        elif n <= 5:
+            return 'pc'
+        else:
+            return 'pl'
+    elif language == 'sdpp':
+        if n == 1:
+            return 's'
+        elif n == 2:
+            return 'd'
+        elif n <= 5:
+            return 'pc'
+        else:
+            return 'pl'
 
 def gen_trials(language, n):
     ns = [ ]
