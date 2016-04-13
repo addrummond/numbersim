@@ -1,0 +1,2 @@
+english s 1 pl *
+dnd     d 2 nd *
