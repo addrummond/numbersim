@@ -6,9 +6,11 @@ import sys
 
 LANGUAGE = 'english' if len(sys.argv) < 2 else sys.argv[1]
 print("Language:", LANGUAGE)
+OUTPUT_FILE = 'test.csv' if len(sys.argv) < 3 else sys.argv[2]
+print("Output file:", OUTPUT_FILE)
 
 MAX_NUMEROSITY = 7
-K = 0.1
+K = 0.01
 BETA=0.6
 SIZE=3
 
@@ -30,9 +32,9 @@ class State:
         self.markers = markers
         self.assocs = { }
         self.atomic_cues = atomic_cues
-        for c in self.atomic_cues:
+        for cue in self.atomic_cues:
             for m in markers:
-                self.assocs[(c,m)] = 0
+                self.assocs[(cue,m)] = 0
 
 def update_state(st, trial):
     tcues, marker = trial
@@ -111,4 +113,4 @@ if __name__ == '__main__':
     markers = list(set([marker_for_n(LANGUAGE, n+1) for n in range(MAX_NUMEROSITY)]))
     trials = gen_trials(LANGUAGE, 1000)
     st = State(cues, markers)
-    run_trials(st, trials, 'test.csv')
+    run_trials(st, trials, OUTPUT_FILE)
