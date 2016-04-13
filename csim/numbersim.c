@@ -26,20 +26,30 @@ static double ztnbd(uint_fast32_t k, double beta, double r)
     top *= pow(beta/(1.0+beta), k);
     return top;
 }
-/*
+
 typedef struct state {
-    char *markers[];
-    unsigned num_markers;
+    language_t language;
     uint_fast32_t max_cue;
     double assocs[];
-} state_t;]
+} state_t;
 
-double get_assoc(const state_t *state, unsigned cue, unsigned marker_index)
+static double get_assoc(const state_t *state, uint_fast32_t cue, unsigned marker_index)
 {
     return state->assocs[(cue * num_markers) + marker_index];
 }
 
-void update_state(state_t *state, )*/
+static void update_state_helper(state_t *state, unsigned marker_index, uint_fast32_t cardinality, double l)
+{
+    double vax = 0;
+    for (unsigned i = 0; i < cardinality; ++i) {
+        vax += get_assoc(state, i, marker_index);
+    }
+}
+
+static void update_state(state_t *state, unsigned marker_index, uint_fast32_t cardinality)
+{
+
+}
 
 int main()
 {
