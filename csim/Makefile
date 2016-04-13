@@ -1,6 +1,6 @@
-CC=gcc
-
-OBJS=numbersim.o
+CC := gcc
+CFLAGS := -I./ $(CFLAGS)
+OBJS := numbersim.o parser.o
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) $*.c -o $*.o
