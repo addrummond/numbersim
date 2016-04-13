@@ -4,6 +4,7 @@
 #include <parser.h>
 #include <config.h>
 #include <ctype.h>
+#include <string.h>
 
 void get_languages(const char *filename, language_t *languages)
 {
@@ -17,7 +18,7 @@ void get_languages(const char *filename, language_t *languages)
     language_t *current_language = languages;
     for (unsigned i = 0; i < MAX_CARDINALITY; ++i)
         current_language->n_to_marker[i] = -1;
-    current_language->default_marker = NULL;
+    current_language->default_marker[0] = '\0';
     unsigned current_name_index = 0;
     char *current_marker = current_language->markers[0];
     unsigned current_marker_index = 0;
@@ -127,7 +128,7 @@ void get_languages(const char *filename, language_t *languages)
             state = 'm';
         }
         else if (state == 't' && c == '*') {
-            current_language->default_marker = current_language->markers[markers_index-1];
+            strcpy(current_language->default_marker, current_language->markers[markers_index-1]);
             state = 's';
         }
         else if (state == 't') {
@@ -160,7 +161,7 @@ void get_languages(const char *filename, language_t *languages)
 
     if (current_languages_index > 0) {
         current_language->num_markers = markers_index;
-        if (! current_language->default_marker) {
+        if (current_language->default_marker[0] == '\0') {
             fprintf(stderr, "[9] No default marker set for language %s\n", current_language->name);
             goto err;
         }
