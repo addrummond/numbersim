@@ -9,7 +9,7 @@ typedef struct language {
     unsigned num_markers;
     int n_to_marker[MAX_CARDINALITY];
     // Used if n_to_marker[][] is -1
-    char default_marker[MARKER_MAX_LENGTH+1];
+    unsigned default_marker_index;
 } language_t;
 
 void get_languages(const char *filename, language_t *languages);

@@ -1,6 +1,6 @@
 CC := gcc
 CFLAGS := -I./ $(CFLAGS)
-OBJS := numbersim.o parser.o
+OBJS := numbersim.o parser.o pcg_basic.o
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) $*.c -o $*.o

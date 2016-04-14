@@ -18,7 +18,7 @@ void get_languages(const char *filename, language_t *languages)
     language_t *current_language = languages;
     for (unsigned i = 0; i < MAX_CARDINALITY; ++i)
         current_language->n_to_marker[i] = -1;
-    current_language->default_marker[0] = '\0';
+    current_language->default_marker_index = -1;
     unsigned current_name_index = 0;
     char *current_marker = current_language->markers[0];
     unsigned current_marker_index = 0;
@@ -54,7 +54,7 @@ void get_languages(const char *filename, language_t *languages)
         }
 
         if (state == 'r') {
-            if (! current_language->default_marker) {
+            if (current_language->default_marker_index == -1) {
                 fprintf(stderr, "[0] No default marker set for language %s\n", current_language->name);
                 goto err;
             }
@@ -128,7 +128,7 @@ void get_languages(const char *filename, language_t *languages)
             state = 'm';
         }
         else if (state == 't' && c == '*') {
-            strcpy(current_language->default_marker, current_language->markers[markers_index-1]);
+            current_language->default_marker_index = markers_index-1;
             state = 's';
         }
         else if (state == 't') {
@@ -161,7 +161,7 @@ void get_languages(const char *filename, language_t *languages)
 
     if (current_languages_index > 0) {
         current_language->num_markers = markers_index;
-        if (current_language->default_marker[0] == '\0') {
+        if (current_language->default_marker_index == -1) {
             fprintf(stderr, "[9] No default marker set for language %s\n", current_language->name);
             goto err;
         }
@@ -179,7 +179,7 @@ err:
 void test_print_languages(language_t *languages)
 {
     for (unsigned i = 0; languages[i].name[0]; ++i) {
-        printf("%s [%i] (def = %s) ", languages[i].name, languages[i].num_markers, languages[i].default_marker);
+        printf("%s [%i] (def = %s) ", languages[i].name, languages[i].num_markers, languages[i].markers[languages[i].default_marker_index]);
         for (unsigned j = 0; j < languages[i].num_markers; ++j) {
             printf("%s ", languages[i].markers[j]);
         }
@@ -187,7 +187,7 @@ void test_print_languages(language_t *languages)
         for (unsigned j = 0; j < MAX_CARDINALITY; ++j) {
             int marker_index = languages[i].n_to_marker[j];
             if (marker_index == -1)
-                printf("_%s ", languages[i].default_marker);
+                printf("_%s ", languages[i].markers[languages[i].default_marker_index]);
             else
                 printf("%s ", languages[i].markers[languages[i].n_to_marker[j]]);
         }
