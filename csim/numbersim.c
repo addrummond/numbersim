@@ -138,14 +138,14 @@ int main(int argc, char **argv)
     //
     // Arguments (all required):
     //
-    //     1)    First random seed (unsigned 64-bit integer in decimal)
-    //     2)    Second reandom seed (unsigned 64-bit integer in decimal)
+    //     1)    First random seed (decimal integer between 0 and (2^64)-1 inclusive)
+    //     2)    Second reandom seed (decimal integer between 0 and (2^64)-1 inclusive)
     //     3)    Language name
     //     4)    beta (param to ztnbd, value is 0.6 in original exp; this value ignored unless arg 9 is "ztnbd")
     //     5)    r (param to ztnbd, value is 3 in original exp; this value ignored unless arg 9 is "ztnbd")
     //     6)    learning rate (typical value is 0.01)
     //     7)    Maximum cue cardinality (7 in original experiment).
-    //     8)    Number of trials to run (unsigned 64-bit integer in decimal)
+    //     8)    Number of trials to run (decimal integer between 0 and (2^64)-1 inclusive)
     //
     //     If argument (9) is "ztnbd", then no further arguments should be given,
     //     and the distribution of cardinalities is given by a zero-terminated
