@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -I./ $(CFLAGS)
+override CFLAGS += -I./
 OBJS := numbersim.o parser.o pcg_basic.o
 
 %.o: %.c

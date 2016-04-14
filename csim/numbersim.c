@@ -220,6 +220,7 @@ int main(int argc, char **argv)
     memcpy(&state.language, lang, sizeof(language_t));
     state.max_cue = max_cue;
     unsigned al = length_of_assocs_array(lang, max_cue);
+    state.assocs = malloc(sizeof(state.assocs[0]) * al);
     for (unsigned i = 0; i < al; ++i)
         state.assocs[i] = 0.0;
     state.learning_rate = learning_rate;
@@ -227,6 +228,8 @@ int main(int argc, char **argv)
     state.ztnbd_r = r;
 
     run_trials(&state, num_trials);
+
+    free(state.assocs);
 
     return 0;
 }
