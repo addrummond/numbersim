@@ -103,7 +103,7 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
     printf("\n");
 }
 
-static void run_trials(state_t *state, unsigned n)
+static void run_trials(state_t *state, uint_fast64_t n)
 {
     output_headings(state);
 
@@ -121,7 +121,7 @@ static void run_trials(state_t *state, unsigned n)
 
     uint_fast32_t card = 0;
     int marker_index = -1;
-    for (unsigned i = 0; i < n; ++i) {
+    for (uint_fast64_t i = 0; i < n; ++i) {
         output_line(state, marker_index, card);
 
         uint32_t r = pcg32_random();
@@ -157,7 +157,7 @@ int main(int argc, char **argv)
     //     5) r (param to ztnbd, value is 3 in original exp)
     //     6) learning rate (typical value is 0.01)
     //     7) Maximum cue cardinality (7 in original experiment).
-    //     8) Number of trials to run.
+    //     8) Number of trials to run (unsigned 64-bit integer in decimal)
     //
 
     if (argc != 9) {
@@ -205,8 +205,8 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    unsigned num_trials;
-    if (sscanf(argv[8], "%u", &num_trials) < 1) {
+    uint_fast64_t num_trials;
+    if (sscanf(argv[8], "%llu", &num_trials) < 1) {
         fprintf(stderr, "Error parsing number of trials (eighth argument)\n");
         exit(1);
     }
