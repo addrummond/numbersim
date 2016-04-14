@@ -175,7 +175,6 @@ int main(int argc, char **argv)
 
     seed2 += !(seed2 % 2); // Ensure that seed2 is odd, as required by pcg library.
     pcg32_srandom(seed1, seed2);
-    printf("SEEDS %llu %llu\n", seed1, seed2);
 
     const char *language_name = argv[3];
 
@@ -211,7 +210,7 @@ int main(int argc, char **argv)
     }
 
     get_languages("languages.txt", languages);
-    test_print_languages(languages);
+    //test_print_languages(languages);
 
     // Find the specified language.
     language_t *lang = NULL;
