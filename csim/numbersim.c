@@ -168,7 +168,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    state_t state;
+    static state_t state;
 
     const char *language_file_name = argv[1];
 
