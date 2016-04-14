@@ -131,8 +131,7 @@ static void run_trials(state_t *state, unsigned n)
 
         // Get the appropriate marker for that cardinality.
         marker_index = state->language.n_to_marker[card];
-        if (marker_index == -1)
-            marker_index = state->language.default_marker_index;
+        assert(marker_index >= 0);
 
         update_state(state, marker_index, card);
     }

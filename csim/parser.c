@@ -5,6 +5,7 @@
 #include <config.h>
 #include <ctype.h>
 #include <string.h>
+#include <assert.h>
 
 void get_languages(const char *filename, language_t *languages)
 {
@@ -57,6 +58,10 @@ void get_languages(const char *filename, language_t *languages)
             if (current_language->default_marker_index == -1) {
                 fprintf(stderr, "[0] No default marker set for language %s\n", current_language->name);
                 goto err;
+            }
+            for (unsigned i = 0; i < MAX_CARDINALITY; ++i) {
+                if (current_language->n_to_marker[i] == -1)
+                    current_language->n_to_marker[i] = current_language->default_marker_index;
             }
 
             current_language->num_markers = markers_index;
@@ -165,6 +170,10 @@ void get_languages(const char *filename, language_t *languages)
             fprintf(stderr, "[9] No default marker set for language %s\n", current_language->name);
             goto err;
         }
+        for (unsigned i = 0; i < MAX_CARDINALITY; ++i) {
+            if (current_language->n_to_marker[i] == -1)
+                current_language->n_to_marker[i] = current_language->default_marker_index;
+        }
     }
 
     languages[current_languages_index+1].name[0] = '\0';
@@ -186,10 +195,8 @@ void test_print_languages(language_t *languages)
         printf ("> ");
         for (unsigned j = 0; j < MAX_CARDINALITY; ++j) {
             int marker_index = languages[i].n_to_marker[j];
-            if (marker_index == -1)
-                printf("_%s ", languages[i].markers[languages[i].default_marker_index]);
-            else
-                printf("%s ", languages[i].markers[languages[i].n_to_marker[j]]);
+            assert(marker_index >= 0);
+            printf("%s ", languages[i].markers[languages[i].n_to_marker[j]]);
         }
         printf("\n");
     }
