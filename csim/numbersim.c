@@ -58,21 +58,23 @@ static void add_to_assoc(const state_t *state, uint_fast32_t cue, unsigned marke
 static void update_state_helper(state_t *state, unsigned marker_index, uint_fast32_t cardinality, double l)
 {
     double vax = 0;
-    for (unsigned i = 0; i < cardinality; ++i) {
+    for (unsigned i = 0; i <= cardinality; ++i) {
         vax += get_assoc(state, i, marker_index);
     }
 
     double delta_v = state->learning_rate * (l - vax);
 
-    for (unsigned i = 0; i < cardinality; ++i) {
+    for (unsigned i = 0; i <= cardinality; ++i) {
+        //printf("ADDING card=%i, marker=%i, raw_index=%u, +%f [%f]\n", i, marker_index, (i * state->language.num_markers) + marker_index, delta_v, l);
         add_to_assoc(state, i, marker_index, delta_v);
     }
 }
 
 static void update_state(state_t *state, unsigned marker_index, uint_fast32_t cardinality)
 {
+    //printf("UPD marker=%u, card=%u\n", marker_index, cardinality);
     for (unsigned i = 0; i < state->language.num_markers; ++i) {
-        update_state_helper(state, i, cardinality, i == marker_index);
+        update_state_helper(state, i, cardinality, i == marker_index ? 1.0 : 0.0);
     }
 }
 
@@ -93,7 +95,7 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
     for (unsigned i = 0; i < state->max_cue; ++i) {
         for (unsigned j = 0; j < state->language.num_markers; ++j) {
             double sum = 0;
-            for (unsigned k = 0; k < i; ++k)
+            for (unsigned k = 0; k <= i; ++k)
                 sum += get_assoc(state, k, j);
             printf(",%f", sum);
         }
@@ -203,7 +205,6 @@ int main(int argc, char **argv)
         fprintf(stderr, "max_cue (seventh argument) must be greater than 0\n");
         exit(1);
     }
-    --max_cue;
 
     unsigned num_trials;
     if (sscanf(argv[8], "%u", &num_trials) < 1) {
