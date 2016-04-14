@@ -138,40 +138,43 @@ int main(int argc, char **argv)
     //
     // Arguments (all required):
     //
-    //     1)    First random seed (decimal integer between 0 and (2^64)-1 inclusive)
-    //     2)    Second reandom seed (decimal integer between 0 and (2^64)-1 inclusive)
-    //     3)    Language name
-    //     4)    beta (param to ztnbd, value is 0.6 in original exp; this value ignored unless arg 9 is "ztnbd")
-    //     5)    r (param to ztnbd, value is 3 in original exp; this value ignored unless arg 9 is "ztnbd")
-    //     6)    learning rate (typical value is 0.01)
-    //     7)    Maximum cue cardinality (7 in original experiment).
-    //     8)    Number of trials to run (decimal integer between 0 and (2^64)-1 inclusive)
+    //     1)    Name of file containing language data.
+    //     2)    First random seed (decimal integer between 0 and (2^64)-1 inclusive)
+    //     3)    Second reandom seed (decimal integer between 0 and (2^64)-1 inclusive)
+    //     4)    Language name
+    //     5)    beta (param to ztnbd, value is 0.6 in original exp; this value ignored unless arg 9 is "ztnbd")
+    //     6)    r (param to ztnbd, value is 3 in original exp; this value ignored unless arg 9 is "ztnbd")
+    //     7)    learning rate (typical value is 0.01)
+    //     8)    Maximum cue cardinality (7 in original experiment).
+    //     9)    Number of trials to run (decimal integer between 0 and (2^64)-1 inclusive)
     //
-    //     If argument (9) is "ztnbd", then no further arguments should be given,
+    //     If argument (10) is "ztnbd", then no further arguments should be given,
     //     and the distribution of cardinalities is given by a zero-terminated
     //     negative binomial distribution parameterized by arguments (4)-(5).
     //
-    //     Otherwise, argument 9 should be the first in a series of floating point
+    //     Otherwise, argument 10 should be the first in a series of floating point
     //     values. The length of this series must be identical to the maximum
     //     cue cardinality. The values are intepreted as p values specifying a
     //     probability distribution.
     //
     //
 
-    if (argc < 10) {
+    if (argc < 11) {
         fprintf(stderr, "Not enough arguments\n");
         exit(1);
     }
 
     state_t state;
 
+    const char *language_file_name = argv[1];
+
     // Get random seed from first and second arguments.
     uint64_t seed1, seed2;
-    if (sscanf(argv[1], "%llu", &seed1) < 1) {
+    if (sscanf(argv[2], "%llu", &seed1) < 1) {
         fprintf(stderr, "Error parsing first random seed (first argument)\n");
         exit(1);
     }
-    if (sscanf(argv[2], "%llu", &seed2) < 1) {
+    if (sscanf(argv[3], "%llu", &seed2) < 1) {
         fprintf(stderr, "Error parsing second random seed (second argument)\n");
         exit(1);
     }
@@ -179,24 +182,24 @@ int main(int argc, char **argv)
     seed2 += !(seed2 % 2); // Ensure that seed2 is odd, as required by pcg library.
     pcg32_srandom_r(&(state.rand_state), seed1, seed2);
 
-    const char *language_name = argv[3];
+    const char *language_name = argv[4];
 
     double beta, r, learning_rate;
-    if (sscanf(argv[4], "%lf", &beta) < 1) {
+    if (sscanf(argv[5], "%lf", &beta) < 1) {
         fprintf(stderr, "Error parsing beta (fourth argument)\n");
         exit(1);
     }
-    if (sscanf(argv[5], "%lf", &r) < 1) {
+    if (sscanf(argv[6], "%lf", &r) < 1) {
         fprintf(stderr, "Error parsing r (fifth argument)\n");
         exit(1);
     }
-    if (sscanf(argv[6], "%lf", &learning_rate) < 1) {
+    if (sscanf(argv[7], "%lf", &learning_rate) < 1) {
         fprintf(stderr, "Error parsing learning_rate (sixth argument)\n");
         exit(1);
     }
 
     uint_fast32_t max_cue;
-    if (sscanf(argv[7], "%u", &max_cue) < 1) {
+    if (sscanf(argv[8], "%u", &max_cue) < 1) {
         fprintf(stderr, "Error parsing max_cue (seventh argument)\n");
         exit(1);
     }
@@ -210,13 +213,13 @@ int main(int argc, char **argv)
     }
 
     uint_fast64_t num_trials;
-    if (sscanf(argv[8], "%llu", &num_trials) < 1) {
+    if (sscanf(argv[9], "%llu", &num_trials) < 1) {
         fprintf(stderr, "Error parsing number of trials (eighth argument)\n");
         exit(1);
     }
 
-    if (! strcmp(argv[9], "ztnbd")) {
-        if (argc > 10) {
+    if (! strcmp(argv[10], "ztnbd")) {
+        if (argc > 11) {
             fprintf(stderr, "Unrecognized trailing arguments following zrnbd\n");
             exit(1);
         }
@@ -231,14 +234,14 @@ int main(int argc, char **argv)
         }
     }
     else {
-        if (argc != 9 + max_cue) {
-            fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", argc-9, max_cue);
+        if (argc != 10 + max_cue) {
+            fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", argc-10, max_cue);
             exit(1);
         }
         double total = 0;
         for (unsigned i = 0; i < 0 + max_cue; ++i) {
             double p;
-            if (sscanf(argv[i+9], "%lf", &p) < 1) {
+            if (sscanf(argv[i+10], "%lf", &p) < 1) {
                 fprintf(stderr, "Error parsing probability value.\n");
                 exit(1);
             }
@@ -254,7 +257,7 @@ int main(int argc, char **argv)
         }
     }
 
-    get_languages("languages.txt", languages);
+    get_languages(language_file_name, languages);
     //test_print_languages(languages);
 
     // Find the specified language.
