@@ -13,10 +13,11 @@ static language_t languages[MAX_LANGUAGES];
 
 static unsigned factorial(uint_fast32_t n)
 {
-    uint_fast32_t nn = n-1;
-    do {
+    assert(n > 0);
+
+    uint_fast32_t nn = n;
+    while (--nn > 0)
         n *= nn;
-    } while (--nn > 0);
     return n;
 }
 
@@ -105,7 +106,8 @@ static void run_trials(state_t *state, unsigned n)
     output_headings(state);
 
     uint32_t thresholds[state->max_cue];
-    for (unsigned i = 0; i < state->max_cue; ++i) {
+
+    for (unsigned i = 1; i <= state->max_cue; ++i) {
         double p = ztnbd(i, state->ztnbd_beta, state->ztnbd_r);
         assert(p >= 0 && p <= 1);
         p *= UINT32_MAX;
