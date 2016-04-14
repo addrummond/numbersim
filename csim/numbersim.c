@@ -183,7 +183,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    seed2 += !(seed2 % 2); // Ensure that seed2 is odd, as required by pcg library.
+    seed2 &= 1; // Ensure that seed2 is odd, as required by pcg library.
     pcg32_srandom_r(&(state.rand_state), seed1, seed2);
 
     const char *language_name = argv[4];
