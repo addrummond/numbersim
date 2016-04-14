@@ -129,7 +129,9 @@ static void run_trials(state_t *state, uint_fast64_t n)
 // If unsigned long long is smaller than uint64_t, the following array will be
 // declared with a negative size, which will give rise to a compile-time error.
 //
-static int ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT[(int)sizeof(unsigned long long) - (int)sizeof(uint64_t)];
+struct ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT_STRUCT {
+    int ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT[(int)sizeof(unsigned long long) - (int)sizeof(uint64_t)];
+};
 
 // Example invocation:
 //
