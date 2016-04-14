@@ -76,8 +76,34 @@ static void update_state(state_t *state, unsigned marker_index, uint_fast32_t ca
     }
 }
 
+static void output_headings(const state_t *state)
+{
+    for (unsigned i = 0; i < state->max_cue; ++i) {
+        for (unsigned j = 0; j < state->language.num_markers; ++j) {
+            if (! (j == 0 && i == 0))
+                printf(",");
+            printf("%i->%s", i+1, state->language.markers[j]);
+        }
+    }
+    printf("\n");
+}
+
+static void output_state(const state_t *state)
+{
+    for (unsigned i = 0; i < state->max_cue; ++i) {
+        for (unsigned j = 0; j < state->language.num_markers; ++j) {
+            if (! (j == 0 && i == 0))
+                printf(",");
+            printf("%f", get_assoc(state, i, j));
+        }
+    }
+    printf("\n");
+}
+
 static void run_trials(state_t *state, unsigned n)
 {
+    output_headings(state);
+
     uint32_t thresholds[state->max_cue];
     for (unsigned i = 0; i < state->max_cue; ++i) {
         double p = ztnbd(i, state->ztnbd_beta, state->ztnbd_r);
@@ -87,6 +113,8 @@ static void run_trials(state_t *state, unsigned n)
     }
 
     for (unsigned i = 0; i < n; ++i) {
+        output_state(state);
+
         uint32_t r = pcg32_boundedrand(1.0);
 
         // Determine the cardinality of the cue based on the random number.
@@ -102,6 +130,10 @@ static void run_trials(state_t *state, unsigned n)
     }
 }
 
+// Example invocation:
+//
+//     ./numbersim 4321 1234 english 0.6 3 0.01 7 200
+//
 int main(int argc, char **argv)
 {
     if (sizeof(unsigned long long) < sizeof(uint64_t)) {
@@ -121,7 +153,7 @@ int main(int argc, char **argv)
     //     8) Number of trials to run.
     //
 
-    if (argc != 7) {
+    if (argc != 9) {
         fprintf(stderr, "Bad arguments\n");
         exit(1);
     }
