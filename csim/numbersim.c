@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <string.h>
 
-// Terminated by langugae with empty string as name.
+// Terminated by language with empty string as name.
 static language_t languages[MAX_LANGUAGES];
 
 static unsigned factorial(uint_fast32_t n)
