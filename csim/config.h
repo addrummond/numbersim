@@ -1,5 +1,10 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
 #define MAX_LANGUAGES 50
 #define LANGUAGE_NAME_MAX_LENGTH 50
 #define MARKER_MAX_LENGTH 10
 #define MAX_MARKERS 10
 #define MAX_CARDINALITY 10
+
+#endif
