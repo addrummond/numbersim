@@ -175,11 +175,11 @@ int main(int argc, char **argv)
     // Get random seed from first and second arguments.
     uint64_t seed1, seed2;
     if (sscanf(argv[2], "%llu", &seed1) < 1) {
-        fprintf(stderr, "Error parsing first random seed (first argument)\n");
+        fprintf(stderr, "Error parsing first random seed (second argument)\n");
         exit(1);
     }
     if (sscanf(argv[3], "%llu", &seed2) < 1) {
-        fprintf(stderr, "Error parsing second random seed (second argument)\n");
+        fprintf(stderr, "Error parsing second random seed (third argument)\n");
         exit(1);
     }
 
@@ -190,41 +190,41 @@ int main(int argc, char **argv)
 
     double beta, r, learning_rate;
     if (sscanf(argv[5], "%lf", &beta) < 1) {
-        fprintf(stderr, "Error parsing beta (fourth argument)\n");
+        fprintf(stderr, "Error parsing beta (fifth argument)\n");
         exit(1);
     }
     if (sscanf(argv[6], "%lf", &r) < 1) {
-        fprintf(stderr, "Error parsing r (fifth argument)\n");
+        fprintf(stderr, "Error parsing r (sixth argument)\n");
         exit(1);
     }
     if (sscanf(argv[7], "%lf", &learning_rate) < 1) {
-        fprintf(stderr, "Error parsing learning_rate (sixth argument)\n");
+        fprintf(stderr, "Error parsing learning_rate (seventh argument)\n");
         exit(1);
     }
 
     uint_fast32_t max_cue;
     if (sscanf(argv[8], "%u", &max_cue) < 1) {
-        fprintf(stderr, "Error parsing max_cue (seventh argument)\n");
+        fprintf(stderr, "Error parsing max_cue (eighth argument)\n");
         exit(1);
     }
     if (max_cue == 0) {
-        fprintf(stderr, "max_cue (seventh argument) must be greater than 0\n");
+        fprintf(stderr, "max_cue (eighth argument) must be greater than 0\n");
         exit(1);
     }
     if (max_cue > MAX_CARDINALITY) {
-        fprintf(stderr, "Value of max_cue (seventh argument) is too big.\n");
+        fprintf(stderr, "Value of max_cue (eighth argument) is too big.\n");
         exit(1);
     }
 
     uint_fast64_t num_trials;
     if (sscanf(argv[9], "%llu", &num_trials) < 1) {
-        fprintf(stderr, "Error parsing number of trials (eighth argument)\n");
+        fprintf(stderr, "Error parsing number of trials (ninth argument)\n");
         exit(1);
     }
 
     if (! strcmp(argv[10], "ztnbd")) {
         if (argc > 11) {
-            fprintf(stderr, "Unrecognized trailing arguments following zrnbd\n");
+            fprintf(stderr, "Unrecognized trailing arguments following ztnbd\n");
             exit(1);
         }
         for (unsigned i = 0; i < max_cue; ++i) {
