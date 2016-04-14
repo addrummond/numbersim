@@ -42,7 +42,7 @@ typedef struct state {
 
 static unsigned length_of_assocs_array(const language_t *l, uint_fast32_t max_cue)
 {
-    return l->num_markers * max_cue;
+    return l->num_markers * (max_cue + 1);
 }
 
 static double get_assoc(const state_t *state, uint_fast32_t cue, unsigned marker_index)
@@ -121,7 +121,6 @@ static void run_trials(state_t *state, unsigned n)
         output_line(state, marker_index, card);
 
         uint32_t r = pcg32_random();
-        printf("R: %u\n", r);
 
         // Determine the cardinality of the cue based on the random number.
         for (card = 0; card < state->max_cue && r >= thresholds[card]; ++card);
