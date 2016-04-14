@@ -109,7 +109,7 @@ static void run_trials(state_t *state, unsigned n)
         double p = ztnbd(i+1, state->ztnbd_beta, state->ztnbd_r);
         assert(p >= 0 && p <= 1);
         p *= UINT32_MAX;
-        thresholds[i] = (uint32_t)rint(p);
+        thresholds[i] = (uint32_t)p;
         if (i > 0) {
             thresholds[i] += thresholds[i-1];
         }
@@ -121,9 +121,10 @@ static void run_trials(state_t *state, unsigned n)
         output_line(state, marker_index, card);
 
         uint32_t r = pcg32_random();
+        printf("R: %u\n", r);
 
         // Determine the cardinality of the cue based on the random number.
-        for (card = 0; card < state->max_cue && r < thresholds[card]; ++card);
+        for (card = 0; card < state->max_cue && r >= thresholds[card]; ++card);
 
         // Get the appropriate marker for that cardinality.
         marker_index = state->language.n_to_marker[card];
@@ -175,6 +176,7 @@ int main(int argc, char **argv)
 
     seed2 += !(seed2 % 2); // Ensure that seed2 is odd, as required by pcg library.
     pcg32_srandom(seed1, seed2);
+    printf("SEEDS %llu %llu\n", seed1, seed2);
 
     const char *language_name = argv[3];
 
