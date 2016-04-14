@@ -79,23 +79,21 @@ static void update_state(state_t *state, unsigned marker_index, uint_fast32_t ca
 
 static void output_headings(const state_t *state)
 {
+    printf("trial");
     for (unsigned i = 0; i < state->max_cue; ++i) {
         for (unsigned j = 0; j < state->language.num_markers; ++j) {
-            if (! (j == 0 && i == 0))
-                printf(",");
-            printf("%i->%s", i+1, state->language.markers[j]);
+            printf(",%i->%s", i+1, state->language.markers[j]);
         }
     }
     printf("\n");
 }
 
-static void output_state(const state_t *state)
+static void output_line(const state_t *state, int marker_index, uint_fast32_t cardinality)
 {
+    printf("%s %i", marker_index == - 1 ? "" : state->language.markers[marker_index], cardinality+1);
     for (unsigned i = 0; i < state->max_cue; ++i) {
         for (unsigned j = 0; j < state->language.num_markers; ++j) {
-            if (! (j == 0 && i == 0))
-                printf(",");
-            printf("%f", get_assoc(state, i, j));
+            printf(",%f", get_assoc(state, i, j));
         }
     }
     printf("\n");
@@ -107,24 +105,28 @@ static void run_trials(state_t *state, unsigned n)
 
     uint32_t thresholds[state->max_cue];
 
-    for (unsigned i = 1; i <= state->max_cue; ++i) {
-        double p = ztnbd(i, state->ztnbd_beta, state->ztnbd_r);
+    for (unsigned i = 0; i < state->max_cue; ++i) {
+        double p = ztnbd(i+1, state->ztnbd_beta, state->ztnbd_r);
         assert(p >= 0 && p <= 1);
         p *= UINT32_MAX;
         thresholds[i] = (uint32_t)rint(p);
+        if (i > 0) {
+            thresholds[i] += thresholds[i-1];
+        }
     }
 
+    uint_fast32_t card = 0;
+    int marker_index = -1;
     for (unsigned i = 0; i < n; ++i) {
-        output_state(state);
+        output_line(state, marker_index, card);
 
-        uint32_t r = pcg32_boundedrand(1.0);
+        uint32_t r = pcg32_random();
 
         // Determine the cardinality of the cue based on the random number.
-        unsigned card;
         for (card = 0; card < state->max_cue && r < thresholds[card]; ++card);
 
         // Get the appropriate marker for that cardinality.
-        int marker_index = state->language.n_to_marker[card];
+        marker_index = state->language.n_to_marker[card];
         if (marker_index == -1)
             marker_index = state->language.default_marker_index;
 
@@ -195,6 +197,11 @@ int main(int argc, char **argv)
         fprintf(stderr, "Error parsing max_cue (seventh argument)\n");
         exit(1);
     }
+    if (max_cue == 0) {
+        fprintf(stderr, "max_cue (seventh argument) must be greater than 0\n");
+        exit(1);
+    }
+    --max_cue;
 
     unsigned num_trials;
     if (sscanf(argv[8], "%u", &num_trials) < 1) {
