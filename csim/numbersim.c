@@ -34,10 +34,10 @@ static double ztnbd(uint_fast32_t k, double beta, double r)
 typedef struct state {
     language_t language;
     uint_fast32_t max_cue;
-    double *assocs;
+    double assocs[MAX_MARKERS * MAX_CARDINALITY];
     double learning_rate;
-    double ztnbd_beta;
-    double ztnbd_r;
+    uint32_t thresholds[MAX_CARDINALITY];
+    pcg32_random_t rand_state;
 } state_t;
 
 static unsigned length_of_assocs_array(const language_t *l, uint_fast32_t max_cue)
@@ -50,7 +50,7 @@ static double get_assoc(const state_t *state, uint_fast32_t cue, unsigned marker
     return state->assocs[(cue * state->language.num_markers) + marker_index];
 }
 
-static void add_to_assoc(const state_t *state, uint_fast32_t cue, unsigned marker_index, double v)
+static void add_to_assoc(state_t *state, uint_fast32_t cue, unsigned marker_index, double v)
 {
     state->assocs[(cue * state->language.num_markers) + marker_index] += v;
 }
@@ -86,7 +86,7 @@ static void output_headings(const state_t *state)
             printf(",%i->%s", i+1, state->language.markers[j]);
         }
     }
-    printf("\n");
+    printf(",seed1,seed2\n");
 }
 
 static void output_line(const state_t *state, int marker_index, uint_fast32_t cardinality)
@@ -100,34 +100,22 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
             printf(",%f", sum);
         }
     }
-    printf("\n");
+    printf(",%llu,%llu\n", state->rand_state.state, state->rand_state.inc);
 }
 
 static void run_trials(state_t *state, uint_fast64_t n)
 {
     output_headings(state);
 
-    uint32_t thresholds[state->max_cue];
-
-    for (unsigned i = 0; i < state->max_cue; ++i) {
-        double p = ztnbd(i+1, state->ztnbd_beta, state->ztnbd_r);
-        assert(p >= 0 && p <= 1);
-        p *= UINT32_MAX;
-        thresholds[i] = (uint32_t)p;
-        if (i > 0) {
-            thresholds[i] += thresholds[i-1];
-        }
-    }
-
     uint_fast32_t card = 0;
     int marker_index = -1;
     for (uint_fast64_t i = 0; i < n; ++i) {
         output_line(state, marker_index, card);
 
-        uint32_t r = pcg32_random();
+        uint32_t r = pcg32_random_r(&(state->rand_state));
 
         // Determine the cardinality of the cue based on the random number.
-        for (card = 0; card < state->max_cue && r >= thresholds[card]; ++card);
+        for (card = 0; card < state->max_cue && r >= state->thresholds[card]; ++card);
 
         // Get the appropriate marker for that cardinality.
         marker_index = state->language.n_to_marker[card];
@@ -150,20 +138,32 @@ int main(int argc, char **argv)
     //
     // Arguments (all required):
     //
-    //     1) First random seed (unsigned 64-bit integer in decimal)
-    //     2) Second reandom seed (unsigned 64-bit integer in decimal)
-    //     3) Language name
-    //     4) beta (param to ztnbd, value is 0.6 in original exp)
-    //     5) r (param to ztnbd, value is 3 in original exp)
-    //     6) learning rate (typical value is 0.01)
-    //     7) Maximum cue cardinality (7 in original experiment).
-    //     8) Number of trials to run (unsigned 64-bit integer in decimal)
+    //     1)    First random seed (unsigned 64-bit integer in decimal)
+    //     2)    Second reandom seed (unsigned 64-bit integer in decimal)
+    //     3)    Language name
+    //     4)    beta (param to ztnbd, value is 0.6 in original exp; this value ignored unless arg 9 is "ztnbd")
+    //     5)    r (param to ztnbd, value is 3 in original exp; this value ignored unless arg 9 is "ztnbd")
+    //     6)    learning rate (typical value is 0.01)
+    //     7)    Maximum cue cardinality (7 in original experiment).
+    //     8)    Number of trials to run (unsigned 64-bit integer in decimal)
+    //
+    //     If argument (9) is "ztnbd", then no further arguments should be given,
+    //     and the distribution of cardinalities is given by a zero-terminated
+    //     negative binomial distribution parameterized by arguments (4)-(5).
+    //
+    //     Otherwise, argument 9 should be the first in a series of floating point
+    //     values. The length of this series must be identical to the maximum
+    //     cue cardinality. The values are intepreted as p values specifying a
+    //     probability distribution.
+    //
     //
 
-    if (argc != 9) {
-        fprintf(stderr, "Bad arguments\n");
+    if (argc < 10) {
+        fprintf(stderr, "Not enough arguments\n");
         exit(1);
     }
+
+    state_t state;
 
     // Get random seed from first and second arguments.
     uint64_t seed1, seed2;
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
     }
 
     seed2 += !(seed2 % 2); // Ensure that seed2 is odd, as required by pcg library.
-    pcg32_srandom(seed1, seed2);
+    pcg32_srandom_r(&(state.rand_state), seed1, seed2);
 
     const char *language_name = argv[3];
 
@@ -204,11 +204,54 @@ int main(int argc, char **argv)
         fprintf(stderr, "max_cue (seventh argument) must be greater than 0\n");
         exit(1);
     }
+    if (max_cue > MAX_CARDINALITY) {
+        fprintf(stderr, "Value of max_cue (seventh argument) is too big.\n");
+        exit(1);
+    }
 
     uint_fast64_t num_trials;
     if (sscanf(argv[8], "%llu", &num_trials) < 1) {
         fprintf(stderr, "Error parsing number of trials (eighth argument)\n");
         exit(1);
+    }
+
+    if (! strcmp(argv[9], "ztnbd")) {
+        if (argc > 10) {
+            fprintf(stderr, "Unrecognized trailing arguments following zrnbd\n");
+            exit(1);
+        }
+        for (unsigned i = 0; i < max_cue; ++i) {
+            double p = ztnbd(i+1, beta, r);
+            assert(p >= 0 && p <= 1);
+            p *= UINT32_MAX;
+            state.thresholds[i] = (uint32_t)p;
+            if (i > 0) {
+                state.thresholds[i] += state.thresholds[i-1];
+            }
+        }
+    }
+    else {
+        if (argc != 9 + max_cue) {
+            fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", argc-9, max_cue);
+            exit(1);
+        }
+        double total = 0;
+        for (unsigned i = 0; i < 0 + max_cue; ++i) {
+            double p;
+            if (sscanf(argv[i+9], "%lf", &p) < 1) {
+                fprintf(stderr, "Error parsing probability value.\n");
+                exit(1);
+            }
+            total += p;
+            state.thresholds[i] = (uint32_t)(UINT32_MAX * p);
+            if (i > 0) {
+                state.thresholds[i] += state.thresholds[i-1];
+            }
+        }
+        if (fabs(total - 1.0) > 0.01) {
+            fprintf(stderr, "p values do not sum to 1\n");
+            exit(1);
+        }
     }
 
     get_languages("languages.txt", languages);
@@ -227,20 +270,14 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    state_t state;
     memcpy(&state.language, lang, sizeof(language_t));
     state.max_cue = max_cue;
     unsigned al = length_of_assocs_array(lang, max_cue);
-    state.assocs = malloc(sizeof(state.assocs[0]) * al);
     for (unsigned i = 0; i < al; ++i)
         state.assocs[i] = 0.0;
     state.learning_rate = learning_rate;
-    state.ztnbd_beta = beta;
-    state.ztnbd_r = r;
 
     run_trials(&state, num_trials);
-
-    free(state.assocs);
 
     return 0;
 }

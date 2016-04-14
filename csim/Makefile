@@ -12,5 +12,5 @@ OBJS := numbersim.o parser.o pcg_basic.o
 clean:
 	find ./ -name '*.o' -exec rm -f {} \;
 
-numbersim: $(OBJS) numbersim
+numbersim: $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -o numbersim
