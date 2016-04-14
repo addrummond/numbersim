@@ -125,16 +125,18 @@ static void run_trials(state_t *state, uint_fast64_t n)
     }
 }
 
+//
+// If unsigned long long is smaller than uint64_t, the following array will be
+// declared with a negative size, which will give rise to a compile-time error.
+//
+static int ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT[(int)sizeof(unsigned long long) - (int)sizeof(uint64_t)];
+
 // Example invocation:
 //
 //     ./numbersim 4321 1234 english 0.6 3 0.01 7 200
 //
 int main(int argc, char **argv)
 {
-    if (sizeof(unsigned long long) < sizeof(uint64_t)) {
-        fprintf(stderr, "WARNING: Seeds cannot be parsed as 64-bit integers -- unsigned long long is too small\n");
-    }
-
     //
     // Arguments (all required):
     //
