@@ -178,6 +178,7 @@ void get_languages(const char *filename, language_t *languages)
 
     languages[current_languages_index+1].name[0] = '\0';
 
+    fclose(f);
     return;
 
 err:
