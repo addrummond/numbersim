@@ -1,5 +1,5 @@
 CC := gcc
-override CFLAGS += -I./
+override CFLAGS += -I./ -O2
 OBJS := numbersim.o parser.o pcg_basic.o
 
 %.o: %.c

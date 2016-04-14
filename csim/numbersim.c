@@ -65,14 +65,13 @@ static void update_state_helper(state_t *state, unsigned marker_index, uint_fast
     double delta_v = state->learning_rate * (l - vax);
 
     for (unsigned i = 0; i < cardinality; ++i) {
-        add_to_assoc(state, cardinality, marker_index, delta_v);
+        add_to_assoc(state, i, marker_index, delta_v);
     }
 }
 
 static void update_state(state_t *state, unsigned marker_index, uint_fast32_t cardinality)
 {
     for (unsigned i = 0; i < state->language.num_markers; ++i) {
-        const char *m = state->language.markers[i];
         update_state_helper(state, i, cardinality, i == marker_index);
     }
 }
@@ -93,7 +92,10 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
     printf("%s %i", marker_index == - 1 ? "" : state->language.markers[marker_index], cardinality+1);
     for (unsigned i = 0; i < state->max_cue; ++i) {
         for (unsigned j = 0; j < state->language.num_markers; ++j) {
-            printf(",%f", get_assoc(state, i, j));
+            double sum = 0;
+            for (unsigned k = 0; k < i; ++k)
+                sum += get_assoc(state, k, j);
+            printf(",%f", sum);
         }
     }
     printf("\n");
