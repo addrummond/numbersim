@@ -53,7 +53,7 @@ static void update_state_helper(state_t *state, unsigned marker_index, uint_fast
         vax += get_assoc(state, i, marker_index);
     }
 
-    double delta_v = state->learning_rate * ((l*1) - vax);
+    double delta_v = state->learning_rate * (l - vax);
 
     for (unsigned i = 0; i < trial->cardinality; ++i) {
         add_to_assoc(state, trial->cardinality, marker_index, delta_v);
@@ -70,7 +70,7 @@ static void update_state(state_t *state, unsigned marker_index, uint_fast32_t ca
 
 static void run_trials(state_t *state, unsigned n)
 {
-    
+
 }
 
 int main()
