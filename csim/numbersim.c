@@ -1,8 +1,8 @@
 //
 // Example invocations:
 //
-//     numbersim languages.txt 4321 1234 english 0.6 3 0.01 7 200 full ztnbd
-//     numbersim languages.txt 4321 1234 english 0 0 0.01 7 200 summary 0.143 0.143 0.143 0.143 0.143 0.143 0.143
+//     numbersim languages.txt 4321 1234 english 0.6 3 0.01 7 1000 full ztnbd 100
+//     numbersim languages.txt 4321 1234 english 0 0 0.01 7 1000 summary 100 0.143 0.143 0.143 0.143 0.143 0.143 0.143
 //     numbersim
 //
 // If invoked with no arguments, arguments are read line-by-line from stdin.
@@ -21,12 +21,15 @@
 //     8)    Maximum cue cardinality (7 in original experiment).
 //     9)    Number of trials to run (decimal integer between 0 and (2^64)-1 inclusive)
 //     10)   Output mode (either 'full' or 'summary')
+//     11)   If output mode is "summary', quit after all markers have been correct
+//           for at least this number of trials. This value is ignored for other
+//           output modes.
 //
-//     If argument (11) is "ztnbd", then no further arguments should be given,
+//     If argument (12) is "ztnbd", then no further arguments should be given,
 //     and the distribution of cardinalities is given by a zero-terminated
-//     negative binomial distribution parameterized by arguments (4)-(5).
+//     negative binomial distribution parameterized by arguments (5)-(6).
 //
-//     Otherwise, argument 11 should be the first in a series of floating point
+//     Otherwise, argument (12) should be the first in a series of floating point
 //     values. The length of this series must be identical to the maximum
 //     cue cardinality. The values are intepreted as p values specifying a
 //     probability distribution.
@@ -71,6 +74,7 @@ typedef enum output_mode {
 
 typedef struct state {
     language_t language;
+    uint_fast64_t n_trials;
     uint_fast32_t max_cue;
     double assocs[MAX_CARDINALITY][MAX_MARKERS];
     double compound_cue_assocs[MAX_CARDINALITY][MAX_MARKERS];
@@ -78,7 +82,8 @@ typedef struct state {
     uint32_t thresholds[MAX_CARDINALITY];
     pcg32_random_t rand_state;
     output_mode_t output_mode;
-    unsigned marker_has_been_correct_for_last[MAX_CARDINALITY];
+    uint_fast64_t marker_has_been_correct_for_last[MAX_CARDINALITY];
+    unsigned quit_after_n_correct;
 } state_t;
 
 static void update_state_helper(state_t *state, unsigned marker_index, uint_fast32_t cardinality, double l)
@@ -96,7 +101,7 @@ static void update_state_helper(state_t *state, unsigned marker_index, uint_fast
     }
 }
 
-static void update_state(state_t *state, unsigned marker_index, uint_fast32_t cardinality)
+static bool update_state(state_t *state, unsigned marker_index, uint_fast32_t cardinality)
 {
     //printf("UPD marker=%u, card=%u\n", marker_index, cardinality);
     for (unsigned i = 0; i < state->language.num_markers; ++i) {
@@ -121,6 +126,19 @@ static void update_state(state_t *state, unsigned marker_index, uint_fast32_t ca
         else
             state->marker_has_been_correct_for_last[i] = 0;
     }
+
+    if (state->output_mode == OUTPUT_MODE_SUMMARY) {
+        // Check if we should quit now.
+        for (unsigned i = 0; i < state->max_cue; ++i) {
+            if (state->marker_has_been_correct_for_last[i] < state->quit_after_n_correct)
+                return true; // Continue running
+        }
+
+        return false; // Quit.
+    }
+    else {
+        return true; // Continue running.
+    }
 }
 
 static void output_headings(const state_t *state)
@@ -142,19 +160,46 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
         for (unsigned j = 0; j < state->language.num_markers; ++j) {
             printf(",%f", state->compound_cue_assocs[i][j]);
         }
-        printf(",%i", state->marker_has_been_correct_for_last[i]);
+        printf(",%llu", state->marker_has_been_correct_for_last[i]);
     }
     printf(",%llu,%llu\n", state->rand_state.state, state->rand_state.inc);
 }
 
+static void output_summary(const state_t *state)
+{
+    for (unsigned i = 0; i < state->max_cue; ++i) {
+        if (i != 0)
+            printf(",");
+        printf("%i", i);
+    }
+    printf("\n");
+    // Output the number of trials which it took to get the right marker
+    // for each cardinality for a sequence of at least the specified number of
+    // trials.
+    for (unsigned i = 0; i < state->max_cue; ++i) {
+        if (i != 0)
+            printf(",");
+
+        uint_fast64_t correct_for = state->marker_has_been_correct_for_last[i];
+        if (correct_for < state->quit_after_n_correct)
+            // This marker was never correct for the required number of trials.
+            printf("-1");
+        else
+            printf("%llu", state->n_trials - correct_for + state->quit_after_n_correct);
+    }
+    printf("\n");
+}
+
 static void run_trials(state_t *state, uint_fast64_t n)
 {
-    output_headings(state);
+    if (state->output_mode == OUTPUT_MODE_FULL)
+        output_headings(state);
 
     uint_fast32_t card = 0;
     int marker_index = -1;
-    for (uint_fast64_t i = 0; i < n; ++i) {
-        output_line(state, marker_index, card);
+    for (; state->n_trials < n; ++(state->n_trials)) {
+        if (state->output_mode == OUTPUT_MODE_FULL)
+            output_line(state, marker_index, card);
 
         uint32_t r = pcg32_random_r(&(state->rand_state));
 
@@ -165,8 +210,12 @@ static void run_trials(state_t *state, uint_fast64_t n)
         marker_index = state->language.n_to_marker[card];
         assert(marker_index >= 0);
 
-        update_state(state, marker_index, card);
+        if (! update_state(state, marker_index, card))
+            break;
     }
+
+    if (state->output_mode == OUTPUT_MODE_SUMMARY)
+        output_summary(state);
 }
 
 #define ARGS_STRING_MAX_LENGTH (1024*8)
@@ -212,12 +261,13 @@ struct ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT_STRUCT {
 
 static void run_given_arguments(int num_args, char **args)
 {
-    if (num_args < 11) {
+    if (num_args < 12) {
         fprintf(stderr, "Not enough arguments\n");
         exit(1);
     }
 
     static state_t state;
+    state.n_trials = 0;
 
     const char *language_file_name = args[0];
 
@@ -286,8 +336,15 @@ static void run_given_arguments(int num_args, char **args)
         exit(1);
     }
 
-    if (! strcmp(args[10], "ztnbd")) {
-        if (num_args > 11) {
+    if (sscanf(args[10], "%u", &(state.quit_after_n_correct)) < 1) {
+        fprintf(stderr, "Bad value for quit_after_n_correct (eleventh argument)\n");
+        exit(1);
+    }
+
+    const unsigned ZTNBD_ARGI = 11;
+
+    if (! strcmp(args[ZTNBD_ARGI], "ztnbd")) {
+        if (num_args > ZTNBD_ARGI+1) {
             fprintf(stderr, "Unrecognized trailing arguments following ztnbd\n");
             exit(1);
         }
@@ -302,14 +359,14 @@ static void run_given_arguments(int num_args, char **args)
         }
     }
     else {
-        if (num_args != 10 + state.max_cue) {
-            fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", num_args-10, state.max_cue);
+        if (num_args != ZTNBD_ARGI + state.max_cue) {
+            fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", num_args-ZTNBD_ARGI, state.max_cue);
             exit(1);
         }
         double total = 0;
         for (unsigned i = 0; i < 0 + state.max_cue; ++i) {
             double p;
-            if (sscanf(args[i+10], "%lf", &p) < 1) {
+            if (sscanf(args[i+ZTNBD_ARGI], "%lf", &p) < 1) {
                 fprintf(stderr, "Error parsing probability value.\n");
                 exit(1);
             }
