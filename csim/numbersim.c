@@ -402,7 +402,7 @@ static void run_given_arguments(int num_args, char **args)
 
     memcpy(&state.language, lang, sizeof(language_t));
     double *as = (double *)(state.assocs);
-    for (unsigned i = 0; i < sizeof(state.assocs)/sizeof(state.assocs[0]); ++i)
+    for (unsigned i = 0; i < sizeof(state.assocs)/sizeof(state.assocs[0][0]); ++i)
         as[i] = 0.0;
 
     run_trials(&state, num_trials);
