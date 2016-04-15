@@ -124,7 +124,7 @@ static void output_headings(const state_t *state)
 
 static void output_line(const state_t *state, int marker_index, uint_fast32_t cardinality)
 {
-    printf("%s %i", marker_index == - 1 ? "" : state->language.markers[marker_index], cardinality+1);
+    printf("%s %i", (marker_index == - 1 ? "" : state->language.markers[marker_index]), cardinality+1);
     for (unsigned i = 0; i < state->max_cue; ++i) {
         double max_sum = 0.0;
         unsigned max_sum_marker_index = 0;
