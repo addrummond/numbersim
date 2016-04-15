@@ -2,7 +2,7 @@
 // Example invocations:
 //
 //     numbersim languages.txt 4321 1234 english 0.6 3 0.01 7 200 ztnbd
-//     numbersim languages.txt 4321 1234 english 0.6 3 0.01 7 200 0.143 0.143 0.143 0.143 0.143 0.143 0.143
+//     numbersim languages.txt 4321 1234 english 0 0 0.01 7 200 0.143 0.143 0.143 0.143 0.143 0.143 0.143
 //     numbersim
 //
 // If invoked with no arguments, arguments are read line-by-line from stdin.
