@@ -211,10 +211,6 @@ struct ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT_STRUCT {
 
 static void run_given_arguments(int num_args, char **args)
 {
-    for (unsigned i = 0; i < num_args; ++i) {
-        printf("ARG %i = {%s}\n", i, args[i]);
-    }
-
     if (num_args < 10) {
         fprintf(stderr, "Not enough arguments\n");
         exit(1);
