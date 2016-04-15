@@ -1,8 +1,8 @@
 //
 // Example invocations:
 //
-//     numbersim languages.txt 4321 1234 english 0.6 3 0.01 7 200 ztnbd
-//     numbersim languages.txt 4321 1234 english 0 0 0.01 7 200 0.143 0.143 0.143 0.143 0.143 0.143 0.143
+//     numbersim languages.txt 4321 1234 english 0.6 3 0.01 7 200 full ztnbd
+//     numbersim languages.txt 4321 1234 english 0 0 0.01 7 200 summary 0.143 0.143 0.143 0.143 0.143 0.143 0.143
 //     numbersim
 //
 // If invoked with no arguments, arguments are read line-by-line from stdin.
@@ -20,12 +20,13 @@
 //     7)    learning rate (typical value is 0.01)
 //     8)    Maximum cue cardinality (7 in original experiment).
 //     9)    Number of trials to run (decimal integer between 0 and (2^64)-1 inclusive)
+//     10)   Output mode (either 'full' or 'summary')
 //
-//     If argument (10) is "ztnbd", then no further arguments should be given,
+//     If argument (11) is "ztnbd", then no further arguments should be given,
 //     and the distribution of cardinalities is given by a zero-terminated
 //     negative binomial distribution parameterized by arguments (4)-(5).
 //
-//     Otherwise, argument 10 should be the first in a series of floating point
+//     Otherwise, argument 11 should be the first in a series of floating point
 //     values. The length of this series must be identical to the maximum
 //     cue cardinality. The values are intepreted as p values specifying a
 //     probability distribution.
@@ -63,42 +64,35 @@ static double ztnbd(uint_fast32_t k, double beta, double r)
     return top;
 }
 
+typedef enum output_mode {
+    OUTPUT_MODE_FULL,
+    OUTPUT_MODE_SUMMARY
+} output_mode_t;
+
 typedef struct state {
     language_t language;
     uint_fast32_t max_cue;
-    double assocs[MAX_MARKERS * MAX_CARDINALITY];
+    double assocs[MAX_CARDINALITY][MAX_MARKERS];
+    double compound_cue_assocs[MAX_CARDINALITY][MAX_MARKERS];
     double learning_rate;
     uint32_t thresholds[MAX_CARDINALITY];
     pcg32_random_t rand_state;
+    output_mode_t output_mode;
+    unsigned marker_has_been_correct_for_last[MAX_CARDINALITY];
 } state_t;
-
-static unsigned length_of_assocs_array(const language_t *l, uint_fast32_t max_cue)
-{
-    return l->num_markers * (max_cue + 1);
-}
-
-static double get_assoc(const state_t *state, uint_fast32_t cue, unsigned marker_index)
-{
-    return state->assocs[(cue * state->language.num_markers) + marker_index];
-}
-
-static void add_to_assoc(state_t *state, uint_fast32_t cue, unsigned marker_index, double v)
-{
-    state->assocs[(cue * state->language.num_markers) + marker_index] += v;
-}
 
 static void update_state_helper(state_t *state, unsigned marker_index, uint_fast32_t cardinality, double l)
 {
     double vax = 0;
     for (unsigned i = 0; i <= cardinality; ++i) {
-        vax += get_assoc(state, i, marker_index);
+        vax += state->assocs[i][marker_index];
     }
 
     double delta_v = state->learning_rate * (l - vax);
 
     for (unsigned i = 0; i <= cardinality; ++i) {
         //printf("ADDING card=%i, marker=%i, raw_index=%u, +%f [%f]\n", i, marker_index, (i * state->language.num_markers) + marker_index, delta_v, l);
-        add_to_assoc(state, i, marker_index, delta_v);
+        state->assocs[i][marker_index] += delta_v;
     }
 }
 
@@ -107,6 +101,25 @@ static void update_state(state_t *state, unsigned marker_index, uint_fast32_t ca
     //printf("UPD marker=%u, card=%u\n", marker_index, cardinality);
     for (unsigned i = 0; i < state->language.num_markers; ++i) {
         update_state_helper(state, i, cardinality, i == marker_index ? 1.0 : 0.0);
+    }
+
+    for (unsigned i = 0; i < state->max_cue; ++i) {
+        double max_sum = 0.0;
+        unsigned max_sum_marker_index;
+        for (unsigned j = 0; j < state->language.num_markers; ++j) {
+            double sum = 0;
+            for (unsigned k = 0; k <= i; ++k)
+                sum += state->assocs[k][j];
+            if (sum > max_sum) {
+                max_sum = sum;
+                max_sum_marker_index = j;
+            }
+            state->compound_cue_assocs[i][j] = sum;
+        }
+        if (max_sum_marker_index == state->language.n_to_marker[i])
+            ++(state->marker_has_been_correct_for_last[i]);
+        else
+            state->marker_has_been_correct_for_last[i] = 0;
     }
 }
 
@@ -126,22 +139,10 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
 {
     printf("%s %i", (marker_index == - 1 ? "" : state->language.markers[marker_index]), cardinality+1);
     for (unsigned i = 0; i < state->max_cue; ++i) {
-        double max_sum = 0.0;
-        unsigned max_sum_marker_index = 0;
         for (unsigned j = 0; j < state->language.num_markers; ++j) {
-            double sum = 0;
-            for (unsigned k = 0; k <= i; ++k)
-                sum += get_assoc(state, k, j);
-            if (sum > max_sum) {
-                max_sum = sum;
-                max_sum_marker_index = j;
-            }
-            printf(",%f", sum);
+            printf(",%f", state->compound_cue_assocs[i][j]);
         }
-
-        // Put 1 in this column if the correct marker has a higher association
-        // than all the others, and 0 otherwise.
-        printf(",%i", max_sum_marker_index == state->language.n_to_marker[i]);
+        printf(",%i", state->marker_has_been_correct_for_last[i]);
     }
     printf(",%llu,%llu\n", state->rand_state.state, state->rand_state.inc);
 }
@@ -211,7 +212,7 @@ struct ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT_STRUCT {
 
 static void run_given_arguments(int num_args, char **args)
 {
-    if (num_args < 10) {
+    if (num_args < 11) {
         fprintf(stderr, "Not enough arguments\n");
         exit(1);
     }
@@ -273,8 +274,20 @@ static void run_given_arguments(int num_args, char **args)
         exit(1);
     }
 
-    if (! strcmp(args[9], "ztnbd")) {
-        if (num_args > 10) {
+    const char *output_mode_string = args[9];
+    if (! strcmp(output_mode_string, "full")) {
+        state.output_mode = OUTPUT_MODE_FULL;
+    }
+    else if (! strcmp(output_mode_string, "summary")) {
+        state.output_mode = OUTPUT_MODE_SUMMARY;
+    }
+    else {
+        fprintf(stderr, "Bad value for output_mode (tenth argument, should be \"summary\" or \"full\")");
+        exit(1);
+    }
+
+    if (! strcmp(args[10], "ztnbd")) {
+        if (num_args > 11) {
             fprintf(stderr, "Unrecognized trailing arguments following ztnbd\n");
             exit(1);
         }
@@ -289,14 +302,14 @@ static void run_given_arguments(int num_args, char **args)
         }
     }
     else {
-        if (num_args != 9 + state.max_cue) {
-            fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", num_args-9, state.max_cue);
+        if (num_args != 10 + state.max_cue) {
+            fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", num_args-10, state.max_cue);
             exit(1);
         }
         double total = 0;
         for (unsigned i = 0; i < 0 + state.max_cue; ++i) {
             double p;
-            if (sscanf(args[i+9], "%lf", &p) < 1) {
+            if (sscanf(args[i+10], "%lf", &p) < 1) {
                 fprintf(stderr, "Error parsing probability value.\n");
                 exit(1);
             }
@@ -331,9 +344,9 @@ static void run_given_arguments(int num_args, char **args)
     }
 
     memcpy(&state.language, lang, sizeof(language_t));
-    unsigned al = length_of_assocs_array(lang, state.max_cue);
-    for (unsigned i = 0; i < al; ++i)
-        state.assocs[i] = 0.0;
+    double *as = (double *)(state.assocs);
+    for (unsigned i = 0; i < sizeof(state.assocs)/sizeof(state.assocs[0]); ++i)
+        as[i] = 0.0;
 
     run_trials(&state, num_trials);
 }
@@ -342,6 +355,7 @@ int main(int argc, char *argv[])
 {
     if (argc > 1) {
         run_given_arguments(argc - 1, argv + 1);
+        printf("\n");
     }
     else {
         for (;;) {
@@ -358,6 +372,7 @@ int main(int argc, char *argv[])
                 static char *args[MAX_ARGS];
                 unsigned num_args = string_to_arg_array(buf, args);
                 run_given_arguments(num_args, args);
+                printf("\n");
             }
         }
     }
