@@ -43,9 +43,6 @@
 #include <stdbool.h>
 #include <ctype.h>
 
-// Terminated by language with empty string as name.
-static language_t languages[MAX_LANGUAGES];
-
 static unsigned factorial(uint_fast32_t n)
 {
     assert(n > 0);
@@ -314,6 +311,8 @@ static void run_given_arguments(int num_args, char **args)
         }
     }
 
+    // Terminated by language with empty string as name.
+    static language_t languages[MAX_LANGUAGES];
     get_languages(language_file_name, languages);
     //test_print_languages(languages);
 
