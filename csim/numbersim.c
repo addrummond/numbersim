@@ -210,7 +210,7 @@ struct ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT_STRUCT {
     int ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT[(int)sizeof(unsigned long long) - (int)sizeof(uint64_t)];
 };
 
-void run_given_arguments(int num_args, char **args)
+static void run_given_arguments(int num_args, char **args)
 {
     for (unsigned i = 0; i < num_args; ++i) {
         printf("ARG %i = {%s}\n", i, args[i]);
