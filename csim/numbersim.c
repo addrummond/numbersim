@@ -210,30 +210,28 @@ struct ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT_STRUCT {
     int ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT[(int)sizeof(unsigned long long) - (int)sizeof(uint64_t)];
 };
 
-void run_given_arguments(int argc, char **argv)
+void run_given_arguments(int num_args, char **args)
 {
-
-
-    for (unsigned i = 0; i < argc; ++i) {
-        printf("ARG %i = {%s}\n", i, argv[i]);
+    for (unsigned i = 0; i < num_args; ++i) {
+        printf("ARG %i = {%s}\n", i, args[i]);
     }
 
-    if (argc < 10) {
+    if (num_args < 10) {
         fprintf(stderr, "Not enough arguments\n");
         exit(1);
     }
 
     static state_t state;
 
-    const char *language_file_name = argv[0];
+    const char *language_file_name = args[0];
 
     // Get random seed from first and second arguments.
     uint64_t seed1, seed2;
-    if (sscanf(argv[1], "%llu", &seed1) < 1) {
+    if (sscanf(args[1], "%llu", &seed1) < 1) {
         fprintf(stderr, "Error parsing first random seed (second argument)\n");
         exit(1);
     }
-    if (sscanf(argv[2], "%llu", &seed2) < 1) {
+    if (sscanf(args[2], "%llu", &seed2) < 1) {
         fprintf(stderr, "Error parsing second random seed (third argument)\n");
         exit(1);
     }
@@ -241,24 +239,24 @@ void run_given_arguments(int argc, char **argv)
     seed2 &= 1; // Ensure that seed2 is odd, as required by pcg library.
     pcg32_srandom_r(&(state.rand_state), seed1, seed2);
 
-    const char *language_name = argv[3];
+    const char *language_name = args[3];
 
     double beta, r, learning_rate;
-    if (sscanf(argv[4], "%lf", &beta) < 1) {
+    if (sscanf(args[4], "%lf", &beta) < 1) {
         fprintf(stderr, "Error parsing beta (fifth argument)\n");
         exit(1);
     }
-    if (sscanf(argv[5], "%lf", &r) < 1) {
+    if (sscanf(args[5], "%lf", &r) < 1) {
         fprintf(stderr, "Error parsing r (sixth argument)\n");
         exit(1);
     }
-    if (sscanf(argv[6], "%lf", &learning_rate) < 1) {
+    if (sscanf(args[6], "%lf", &learning_rate) < 1) {
         fprintf(stderr, "Error parsing learning_rate (seventh argument)\n");
         exit(1);
     }
 
     uint_fast32_t max_cue;
-    if (sscanf(argv[7], "%u", &max_cue) < 1) {
+    if (sscanf(args[7], "%u", &max_cue) < 1) {
         fprintf(stderr, "Error parsing max_cue (eighth argument)\n");
         exit(1);
     }
@@ -272,13 +270,13 @@ void run_given_arguments(int argc, char **argv)
     }
 
     uint_fast64_t num_trials;
-    if (sscanf(argv[8], "%llu", &num_trials) < 1) {
+    if (sscanf(args[8], "%llu", &num_trials) < 1) {
         fprintf(stderr, "Error parsing number of trials (ninth argument)\n");
         exit(1);
     }
 
-    if (! strcmp(argv[9], "ztnbd")) {
-        if (argc > 10) {
+    if (! strcmp(args[9], "ztnbd")) {
+        if (num_args > 10) {
             fprintf(stderr, "Unrecognized trailing arguments following ztnbd\n");
             exit(1);
         }
@@ -293,14 +291,14 @@ void run_given_arguments(int argc, char **argv)
         }
     }
     else {
-        if (argc != 9 + max_cue) {
-            fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", argc-9, max_cue);
+        if (num_args != 9 + max_cue) {
+            fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", num_args-9, max_cue);
             exit(1);
         }
         double total = 0;
         for (unsigned i = 0; i < 0 + max_cue; ++i) {
             double p;
-            if (sscanf(argv[i+9], "%lf", &p) < 1) {
+            if (sscanf(args[i+9], "%lf", &p) < 1) {
                 fprintf(stderr, "Error parsing probability value.\n");
                 exit(1);
             }
