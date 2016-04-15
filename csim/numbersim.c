@@ -139,6 +139,8 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
             printf(",%f", sum);
         }
 
+        // Put 1 in this column if the correct marker has a higher association
+        // than all the others, and 0 otherwise.
         printf(",%i", max_sum_marker_index == state->language.n_to_marker[i]);
     }
     printf(",%llu,%llu\n", state->rand_state.state, state->rand_state.inc);
