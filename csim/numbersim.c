@@ -1,3 +1,36 @@
+//
+// Example invocations:
+//
+//     numbersim languages.txt 4321 1234 english 0.6 3 0.01 7 200 ztnbd
+//     numbersim languages.txt 4321 1234 english 0.6 3 0.01 7 200 0.143 0.143 0.143 0.143 0.143 0.143 0.143
+//     numbersim
+//
+// If invoked with no arguments, arguments are read line-by-line from stdin.
+// The corresponding output for each line is written to stdout immediately after
+// each line is read.
+//
+// Arguments (all required):
+//
+//     1)    Name of file containing language data.
+//     2)    First random seed (decimal integer between 0 and (2^64)-1 inclusive)
+//     3)    Second reandom seed (decimal integer between 0 and (2^64)-1 inclusive)
+//     4)    Language name
+//     5)    beta (param to ztnbd, value is 0.6 in original exp; this value ignored unless arg 9 is "ztnbd")
+//     6)    r (param to ztnbd, value is 3 in original exp; this value ignored unless arg 9 is "ztnbd")
+//     7)    learning rate (typical value is 0.01)
+//     8)    Maximum cue cardinality (7 in original experiment).
+//     9)    Number of trials to run (decimal integer between 0 and (2^64)-1 inclusive)
+//
+//     If argument (10) is "ztnbd", then no further arguments should be given,
+//     and the distribution of cardinalities is given by a zero-terminated
+//     negative binomial distribution parameterized by arguments (4)-(5).
+//
+//     Otherwise, argument 10 should be the first in a series of floating point
+//     values. The length of this series must be identical to the maximum
+//     cue cardinality. The values are intepreted as p values specifying a
+//     probability distribution.
+//
+
 #include <stdio.h>
 #include <math.h>
 #include <stdint.h>
@@ -7,6 +40,8 @@
 #include <pcg_basic.h>
 #include <assert.h>
 #include <string.h>
+#include <stdbool.h>
+#include <ctype.h>
 
 // Terminated by language with empty string as name.
 static language_t languages[MAX_LANGUAGES];
@@ -134,6 +169,39 @@ static void run_trials(state_t *state, uint_fast64_t n)
     }
 }
 
+#define ARGS_STRING_MAX_LENGTH (1024*8)
+#define MAX_ARGS 100
+
+static unsigned string_to_arg_array(char *str, char *arg_array[])
+{
+    arg_array[0] = str;
+
+    bool in_space = false;
+    unsigned aai = 1;
+    unsigned i;
+    for (i = 0; str[i] && aai < MAX_ARGS; ++i) {
+        if (in_space) {
+            if (! isspace(str[i])) {
+                arg_array[aai++] = str + i;
+                in_space = false;
+            }
+        }
+        else {
+            if (isspace(str[i])) {
+                str[i] = '\0';
+                in_space = true;
+            }
+        }
+    }
+
+    if (str[i]) {
+        fprintf(stderr, "Too many arguments (max is %u)\n", ARGS_STRING_MAX_LENGTH);
+        exit(1);
+    }
+
+    return aai;
+}
+
 //
 // If unsigned long long is smaller than uint64_t, the following array will be
 // declared with a negative size, which will give rise to a compile-time error.
@@ -142,52 +210,30 @@ struct ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT_STRUCT {
     int ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT[(int)sizeof(unsigned long long) - (int)sizeof(uint64_t)];
 };
 
-// Example invocation:
-//
-//     ./numbersim 4321 1234 english 0.6 3 0.01 7 200
-//
-int main(int argc, char **argv)
+void run_given_arguments(int argc, char **argv)
 {
-    //
-    // Arguments (all required):
-    //
-    //     1)    Name of file containing language data.
-    //     2)    First random seed (decimal integer between 0 and (2^64)-1 inclusive)
-    //     3)    Second reandom seed (decimal integer between 0 and (2^64)-1 inclusive)
-    //     4)    Language name
-    //     5)    beta (param to ztnbd, value is 0.6 in original exp; this value ignored unless arg 9 is "ztnbd")
-    //     6)    r (param to ztnbd, value is 3 in original exp; this value ignored unless arg 9 is "ztnbd")
-    //     7)    learning rate (typical value is 0.01)
-    //     8)    Maximum cue cardinality (7 in original experiment).
-    //     9)    Number of trials to run (decimal integer between 0 and (2^64)-1 inclusive)
-    //
-    //     If argument (10) is "ztnbd", then no further arguments should be given,
-    //     and the distribution of cardinalities is given by a zero-terminated
-    //     negative binomial distribution parameterized by arguments (4)-(5).
-    //
-    //     Otherwise, argument 10 should be the first in a series of floating point
-    //     values. The length of this series must be identical to the maximum
-    //     cue cardinality. The values are intepreted as p values specifying a
-    //     probability distribution.
-    //
-    //
 
-    if (argc < 11) {
+
+    for (unsigned i = 0; i < argc; ++i) {
+        printf("ARG %i = {%s}\n", i, argv[i]);
+    }
+
+    if (argc < 10) {
         fprintf(stderr, "Not enough arguments\n");
         exit(1);
     }
 
     static state_t state;
 
-    const char *language_file_name = argv[1];
+    const char *language_file_name = argv[0];
 
     // Get random seed from first and second arguments.
     uint64_t seed1, seed2;
-    if (sscanf(argv[2], "%llu", &seed1) < 1) {
+    if (sscanf(argv[1], "%llu", &seed1) < 1) {
         fprintf(stderr, "Error parsing first random seed (second argument)\n");
         exit(1);
     }
-    if (sscanf(argv[3], "%llu", &seed2) < 1) {
+    if (sscanf(argv[2], "%llu", &seed2) < 1) {
         fprintf(stderr, "Error parsing second random seed (third argument)\n");
         exit(1);
     }
@@ -195,24 +241,24 @@ int main(int argc, char **argv)
     seed2 &= 1; // Ensure that seed2 is odd, as required by pcg library.
     pcg32_srandom_r(&(state.rand_state), seed1, seed2);
 
-    const char *language_name = argv[4];
+    const char *language_name = argv[3];
 
     double beta, r, learning_rate;
-    if (sscanf(argv[5], "%lf", &beta) < 1) {
+    if (sscanf(argv[4], "%lf", &beta) < 1) {
         fprintf(stderr, "Error parsing beta (fifth argument)\n");
         exit(1);
     }
-    if (sscanf(argv[6], "%lf", &r) < 1) {
+    if (sscanf(argv[5], "%lf", &r) < 1) {
         fprintf(stderr, "Error parsing r (sixth argument)\n");
         exit(1);
     }
-    if (sscanf(argv[7], "%lf", &learning_rate) < 1) {
+    if (sscanf(argv[6], "%lf", &learning_rate) < 1) {
         fprintf(stderr, "Error parsing learning_rate (seventh argument)\n");
         exit(1);
     }
 
     uint_fast32_t max_cue;
-    if (sscanf(argv[8], "%u", &max_cue) < 1) {
+    if (sscanf(argv[7], "%u", &max_cue) < 1) {
         fprintf(stderr, "Error parsing max_cue (eighth argument)\n");
         exit(1);
     }
@@ -226,13 +272,13 @@ int main(int argc, char **argv)
     }
 
     uint_fast64_t num_trials;
-    if (sscanf(argv[9], "%llu", &num_trials) < 1) {
+    if (sscanf(argv[8], "%llu", &num_trials) < 1) {
         fprintf(stderr, "Error parsing number of trials (ninth argument)\n");
         exit(1);
     }
 
-    if (! strcmp(argv[10], "ztnbd")) {
-        if (argc > 11) {
+    if (! strcmp(argv[9], "ztnbd")) {
+        if (argc > 10) {
             fprintf(stderr, "Unrecognized trailing arguments following ztnbd\n");
             exit(1);
         }
@@ -247,14 +293,14 @@ int main(int argc, char **argv)
         }
     }
     else {
-        if (argc != 10 + max_cue) {
-            fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", argc-10, max_cue);
+        if (argc != 9 + max_cue) {
+            fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", argc-9, max_cue);
             exit(1);
         }
         double total = 0;
         for (unsigned i = 0; i < 0 + max_cue; ++i) {
             double p;
-            if (sscanf(argv[i+10], "%lf", &p) < 1) {
+            if (sscanf(argv[i+9], "%lf", &p) < 1) {
                 fprintf(stderr, "Error parsing probability value.\n");
                 exit(1);
             }
@@ -294,6 +340,31 @@ int main(int argc, char **argv)
     state.learning_rate = learning_rate;
 
     run_trials(&state, num_trials);
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc > 1) {
+        run_given_arguments(argc - 1, argv + 1);
+    }
+    else {
+        for (;;) {
+            static char buf_[ARGS_STRING_MAX_LENGTH];
+            char *buf = buf_;
+            size_t sz = sizeof(buf_);
+            int bytes_read = getline(&buf, &sz, stdin);
+            if (bytes_read < 0) {
+                // We'll just assume this is EOF an not an error, since we're
+                // reading from stdin.
+                exit(0);
+            }
+            else if (bytes_read > 0) {
+                static char *args[MAX_ARGS];
+                unsigned num_args = string_to_arg_array(buf, args);
+                run_given_arguments(num_args, args);
+            }
+        }
+    }
 
     return 0;
 }
