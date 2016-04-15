@@ -85,6 +85,7 @@ static void output_headings(const state_t *state)
         for (unsigned j = 0; j < state->language.num_markers; ++j) {
             printf(",%i->%s", i+1, state->language.markers[j]);
         }
+        printf(",%i_correct", i+1);
     }
     printf(",seed1,seed2\n");
 }
@@ -93,12 +94,20 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
 {
     printf("%s %i", marker_index == - 1 ? "" : state->language.markers[marker_index], cardinality+1);
     for (unsigned i = 0; i < state->max_cue; ++i) {
+        double max_sum = 0.0;
+        unsigned max_sum_marker_index = 0;
         for (unsigned j = 0; j < state->language.num_markers; ++j) {
             double sum = 0;
             for (unsigned k = 0; k <= i; ++k)
                 sum += get_assoc(state, k, j);
+            if (sum > max_sum) {
+                max_sum = sum;
+                max_sum_marker_index = j;
+            }
             printf(",%f", sum);
         }
+
+        printf(",%i", max_sum_marker_index == state->language.n_to_marker[i]);
     }
     printf(",%llu,%llu\n", state->rand_state.state, state->rand_state.inc);
 }
