@@ -236,7 +236,7 @@ static void run_given_arguments(int num_args, char **args)
 
     const char *language_name = args[3];
 
-    double beta, r, learning_rate;
+    double beta, r;
     if (sscanf(args[4], "%lf", &beta) < 1) {
         fprintf(stderr, "Error parsing beta (fifth argument)\n");
         exit(1);
@@ -245,21 +245,24 @@ static void run_given_arguments(int num_args, char **args)
         fprintf(stderr, "Error parsing r (sixth argument)\n");
         exit(1);
     }
-    if (sscanf(args[6], "%lf", &learning_rate) < 1) {
+    if (sscanf(args[6], "%lf", &(state.learning_rate)) < 1) {
         fprintf(stderr, "Error parsing learning_rate (seventh argument)\n");
         exit(1);
     }
+    if (state.learning_rate <= 0) {
+        fprintf(stderr, "Bad value for learning_rate (must be > 0)\n");
+        exit(1);
+    }
 
-    uint_fast32_t max_cue;
-    if (sscanf(args[7], "%u", &max_cue) < 1) {
+    if (sscanf(args[7], "%u", &(state.max_cue)) < 1) {
         fprintf(stderr, "Error parsing max_cue (eighth argument)\n");
         exit(1);
     }
-    if (max_cue == 0) {
+    if (state.max_cue == 0) {
         fprintf(stderr, "max_cue (eighth argument) must be greater than 0\n");
         exit(1);
     }
-    if (max_cue > MAX_CARDINALITY) {
+    if (state.max_cue > MAX_CARDINALITY) {
         fprintf(stderr, "Value of max_cue (eighth argument) is too big.\n");
         exit(1);
     }
@@ -275,7 +278,7 @@ static void run_given_arguments(int num_args, char **args)
             fprintf(stderr, "Unrecognized trailing arguments following ztnbd\n");
             exit(1);
         }
-        for (unsigned i = 0; i < max_cue; ++i) {
+        for (unsigned i = 0; i < state.max_cue; ++i) {
             double p = ztnbd(i+1, beta, r);
             assert(p >= 0 && p <= 1);
             p *= UINT32_MAX;
@@ -286,12 +289,12 @@ static void run_given_arguments(int num_args, char **args)
         }
     }
     else {
-        if (num_args != 9 + max_cue) {
-            fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", num_args-9, max_cue);
+        if (num_args != 9 + state.max_cue) {
+            fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", num_args-9, state.max_cue);
             exit(1);
         }
         double total = 0;
-        for (unsigned i = 0; i < 0 + max_cue; ++i) {
+        for (unsigned i = 0; i < 0 + state.max_cue; ++i) {
             double p;
             if (sscanf(args[i+9], "%lf", &p) < 1) {
                 fprintf(stderr, "Error parsing probability value.\n");
@@ -328,11 +331,9 @@ static void run_given_arguments(int num_args, char **args)
     }
 
     memcpy(&state.language, lang, sizeof(language_t));
-    state.max_cue = max_cue;
-    unsigned al = length_of_assocs_array(lang, max_cue);
+    unsigned al = length_of_assocs_array(lang, state.max_cue);
     for (unsigned i = 0; i < al; ++i)
         state.assocs[i] = 0.0;
-    state.learning_rate = learning_rate;
 
     run_trials(&state, num_trials);
 }
