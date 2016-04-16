@@ -23,11 +23,15 @@ function initRandomDistribution() {
     }
 }
 
-function getArgs() {
+function getInitialArgs(seed1, seed2) {
+    if (seed1 === undefined)
+        seed1 = parseInt(Math.random()*Math.pow(2,64));
+    if (seed2 === undefined)
+        seed2 = parseInt(Math.random()*Math.pow(2,64));
+
     return (
         "languages.txt " +
-        parseInt(Math.random()*Math.pow(2,64)) + ' ' +
-        parseInt(Math.random()*Math.pow(2,64)) + ' ' +
+        seed1 + ' ' + seed2 + ' ' +
         "dnd " +
         BETA + ' ' +
         R + ' ' +
@@ -66,7 +70,8 @@ numbersim.stderr.pipe(process.stderr);
 let currentBuffer = "";
 let currentBufferIndex = 0;
 let numRuns = 0;
-numbersim.stdout.on('data', function (data) {
+let seed1, seed2;
+numbersim.stdout.on('data', (data) => {
     currentBuffer += data;
 
     for (; currentBufferIndex < currentBuffer.length; ++currentBufferIndex) {
@@ -82,21 +87,25 @@ numbersim.stdout.on('data', function (data) {
     }
 
     function handleLine(cols) {
+        if (cols.length != MAX_CARDINALITY + 2)
+            return;
+
+        seed2 = parseInt(cols[cols.length-1]);
+        seed1 = parseInt(cols[cols.length-2]);
+
         console.log(cols);
 
         ++numRuns;
-        if (numRuns < N_DISTRIBUTIONS) {
-            doRun();
-        }
-        else {
+        if (numRuns < N_DISTRIBUTIONS)
+            doRun(seed1, seed2);
+        else
             process.exit(0);
-        }
     }
 });
 
 doRun();
-function doRun() {
+function doRun(seed1, seed2) {
     initRandomDistribution();
-    console.log(getArgs() + rd.join(' ') + '\n');
-    numbersim.stdin.write(getArgs() + rd.join(' ') + '\n', 'utf-8');
+    let cmd = getInitialArgs(seed1, seed2) + rd.join(' ') + '\n';
+    numbersim.stdin.write(cmd, 'utf-8');
 }

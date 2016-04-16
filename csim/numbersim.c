@@ -273,11 +273,11 @@ static void run_given_arguments(int num_args, char **args)
     // Get random seed from first and second arguments.
     uint64_t seed1, seed2;
     if (sscanf(args[1], "%llu", &seed1) < 1) {
-        fprintf(stderr, "Error parsing first random seed (second argument)\n");
+        fprintf(stderr, "Error parsing first random seed '%s' (second argument)\n", args[1]);
         exit(1);
     }
     if (sscanf(args[2], "%llu", &seed2) < 1) {
-        fprintf(stderr, "Error parsing second random seed (third argument)\n");
+        fprintf(stderr, "Error parsing second random seed '%s' (third argument)\n", args[2]);
         exit(1);
     }
 
@@ -412,6 +412,7 @@ int main(int argc, char *argv[])
     if (argc > 1) {
         run_given_arguments(argc - 1, argv + 1);
         printf("\n");
+        fflush(stdout);
     }
     else {
         for (;;) {
@@ -429,6 +430,7 @@ int main(int argc, char *argv[])
                 unsigned num_args = string_to_arg_array(buf, args);
                 run_given_arguments(num_args, args);
                 printf("\n");
+                fflush(stdout);
             }
         }
     }
