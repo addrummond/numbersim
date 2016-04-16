@@ -184,7 +184,7 @@ static void output_summary(const state_t *state)
 
     // Output seed state for random number generator (so that subsequent runs
     // can use them as the starting point).
-    printf(",%llu,%llu\n", state->rand_state.state, state->rand_state.inc);
+    printf(",%llu,%llu", state->rand_state.state, state->rand_state.inc);
 }
 
 static void run_trials(state_t *state, uint_fast64_t n)
