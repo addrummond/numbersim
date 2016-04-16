@@ -181,7 +181,10 @@ static void output_summary(const state_t *state)
         else
             printf("%llu", state->n_trials - correct_for + state->quit_after_n_correct);
     }
-    printf("\n");
+
+    // Output seed state for random number generator (so that subsequent runs
+    // can use them as the starting point).
+    printf(",%llu,%llu\n", state->rand_state.state, state->rand_state.inc);
 }
 
 static void run_trials(state_t *state, uint_fast64_t n)
