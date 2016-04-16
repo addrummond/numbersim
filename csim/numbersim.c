@@ -167,12 +167,6 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
 
 static void output_summary(const state_t *state)
 {
-    for (unsigned i = 0; i < state->max_cue; ++i) {
-        if (i != 0)
-            printf(",");
-        printf("%i", i);
-    }
-    printf("\n");
     // Output the number of trials which it took to get the right marker
     // for each cardinality for a sequence of at least the specified number of
     // trials.
@@ -216,6 +210,8 @@ static void run_trials(state_t *state, uint_fast64_t n)
 
     if (state->output_mode == OUTPUT_MODE_SUMMARY)
         output_summary(state);
+
+    fflush(stdout);
 }
 
 #define ARGS_STRING_MAX_LENGTH (1024*8)
