@@ -7,7 +7,8 @@ const BETA = 0.6;
 const R = 3;
 const LEARNING_RATE = 0.01;
 const N_DISTRIBUTIONS = 100000;
-const QUIT_AFTER_N_CORRECT = 10000;
+const N_RUNS = 500;
+const QUIT_AFTER_N_CORRECT = 200;
 
 let rd = new Array(MAX_CARDINALITY); // Declared outside of function to avoid allocation on every run.
 function initRandomDistribution() {
@@ -32,12 +33,12 @@ function getInitialArgs(seed1, seed2) {
     return (
         "languages.txt " +
         seed1 + ' ' + seed2 + ' ' +
-        "dnd " +
+        process.argv[2] + ' ' +
         BETA + ' ' +
         R + ' ' +
         LEARNING_RATE + ' ' +
         MAX_CARDINALITY + ' ' +
-        QUIT_AFTER_N_CORRECT + ' ' +
+        N_RUNS + ' ' +
         'summary ' +
         QUIT_AFTER_N_CORRECT + ' '
     );
@@ -71,6 +72,7 @@ let currentBuffer = "";
 let currentBufferIndex = 0;
 let numRuns = 0;
 let seed1, seed2;
+let numberOfFails = new Uint32Array(MAX_CARDINALITY); // Will be initialized with zeros
 numbersim.stdout.on('data', (data) => {
     currentBuffer += data;
 
@@ -90,18 +92,29 @@ numbersim.stdout.on('data', (data) => {
         if (cols.length != MAX_CARDINALITY + 2)
             return;
 
+        for (let i = 0; i < MAX_CARDINALITY; ++i)
+            numberOfFails[i] += (parseInt(cols[i]) == -1 ? 1 : 0);
+
         seed2 = parseInt(cols[cols.length-1]);
         seed1 = parseInt(cols[cols.length-2]);
 
-        console.log(cols);
-
         ++numRuns;
-        if (numRuns < N_DISTRIBUTIONS)
+        if (numRuns < N_DISTRIBUTIONS) {
             doRun(seed1, seed2);
-        else
+        }
+        else {
+            printFinalReport();
             process.exit(0);
+        }
     }
 });
+
+function printFinalReport()
+{
+    for (let i = 0; i < MAX_CARDINALITY; ++i) {
+        console.log(i+1, ((1-(numberOfFails[i]/N_DISTRIBUTIONS))*100) + '%');
+    }
+}
 
 doRun();
 function doRun(seed1, seed2) {
