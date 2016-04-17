@@ -43,7 +43,7 @@ function getInitialArgs(seed1, seed2) {
     );
 }
 
-let numbersim = child_process.execFile(__dirname + "/numbersim", [ ]);
+let numbersim = child_process.spawn(__dirname + "/numbersim");
 numbersim.stdout.setEncoding('utf-8');
 numbersim.stderr.setEncoding('utf-8');
 
@@ -53,7 +53,7 @@ numbersim.on('error', function (err) {
 });
 numbersim.on('exit', function (code) {
     if (code != 0)
-        console.log("Child process exited with error");
+        console.log("Child process exited with error (code", code, ")");
     else
         console.log("Child process exited");
 });
@@ -107,5 +107,6 @@ doRun();
 function doRun(seed1, seed2) {
     initRandomDistribution();
     let cmd = getInitialArgs(seed1, seed2) + rd.join(' ') + '\n';
+    //console.log("-->", cmd);
     numbersim.stdin.write(cmd, 'utf-8');
 }

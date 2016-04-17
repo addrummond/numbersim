@@ -262,7 +262,7 @@ static void run_given_arguments(int num_args, char **args)
 {
     if (num_args < 12) {
         fprintf(stderr, "Not enough arguments\n");
-        exit(1);
+        exit(2);
     }
 
     static state_t state;
@@ -274,11 +274,11 @@ static void run_given_arguments(int num_args, char **args)
     uint64_t seed1, seed2;
     if (sscanf(args[1], "%llu", &seed1) < 1) {
         fprintf(stderr, "Error parsing first random seed '%s' (second argument)\n", args[1]);
-        exit(1);
+        exit(3);
     }
     if (sscanf(args[2], "%llu", &seed2) < 1) {
         fprintf(stderr, "Error parsing second random seed '%s' (third argument)\n", args[2]);
-        exit(1);
+        exit(4);
     }
 
     seed2 |= 1; // Ensure that seed2 is odd, as required by pcg library.
@@ -289,38 +289,38 @@ static void run_given_arguments(int num_args, char **args)
     double beta, r;
     if (sscanf(args[4], "%lf", &beta) < 1) {
         fprintf(stderr, "Error parsing beta (fifth argument)\n");
-        exit(1);
+        exit(5);
     }
     if (sscanf(args[5], "%lf", &r) < 1) {
         fprintf(stderr, "Error parsing r (sixth argument)\n");
-        exit(1);
+        exit(6);
     }
     if (sscanf(args[6], "%lf", &(state.learning_rate)) < 1) {
         fprintf(stderr, "Error parsing learning_rate (seventh argument)\n");
-        exit(1);
+        exit(7);
     }
     if (state.learning_rate <= 0) {
         fprintf(stderr, "Bad value for learning_rate (must be > 0)\n");
-        exit(1);
+        exit(8);
     }
 
     if (sscanf(args[7], "%u", &(state.max_cue)) < 1) {
         fprintf(stderr, "Error parsing max_cue (eighth argument)\n");
-        exit(1);
+        exit(9);
     }
     if (state.max_cue == 0) {
         fprintf(stderr, "max_cue (eighth argument) must be greater than 0\n");
-        exit(1);
+        exit(10);
     }
     if (state.max_cue > MAX_CARDINALITY) {
         fprintf(stderr, "Value of max_cue (eighth argument) is too big.\n");
-        exit(1);
+        exit(11);
     }
 
     uint_fast64_t num_trials;
     if (sscanf(args[8], "%llu", &num_trials) < 1) {
         fprintf(stderr, "Error parsing number of trials (ninth argument)\n");
-        exit(1);
+        exit(12);
     }
 
     const char *output_mode_string = args[9];
@@ -332,12 +332,12 @@ static void run_given_arguments(int num_args, char **args)
     }
     else {
         fprintf(stderr, "Bad value for output_mode (tenth argument, should be \"summary\" or \"full\")");
-        exit(1);
+        exit(13);
     }
 
     if (sscanf(args[10], "%u", &(state.quit_after_n_correct)) < 1) {
         fprintf(stderr, "Bad value for quit_after_n_correct (eleventh argument)\n");
-        exit(1);
+        exit(14);
     }
 
     const unsigned ZTNBD_ARGI = 11;
@@ -345,7 +345,7 @@ static void run_given_arguments(int num_args, char **args)
     if (! strcmp(args[ZTNBD_ARGI], "ztnbd")) {
         if (num_args > ZTNBD_ARGI+1) {
             fprintf(stderr, "Unrecognized trailing arguments following ztnbd\n");
-            exit(1);
+            exit(15);
         }
         for (unsigned i = 0; i < state.max_cue; ++i) {
             double p = ztnbd(i+1, beta, r);
@@ -360,14 +360,14 @@ static void run_given_arguments(int num_args, char **args)
     else {
         if (num_args != ZTNBD_ARGI + state.max_cue) {
             fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", num_args-ZTNBD_ARGI, state.max_cue);
-            exit(1);
+            exit(16);
         }
         double total = 0;
         for (unsigned i = 0; i < 0 + state.max_cue; ++i) {
             double p;
             if (sscanf(args[i+ZTNBD_ARGI], "%lf", &p) < 1) {
                 fprintf(stderr, "Error parsing probability value.\n");
-                exit(1);
+                exit(17);
             }
             total += p;
             state.thresholds[i] = (uint32_t)(UINT32_MAX * p);
@@ -377,7 +377,7 @@ static void run_given_arguments(int num_args, char **args)
         }
         if (fabs(total - 1.0) > 0.01) {
             fprintf(stderr, "p values do not sum to 1\n");
-            exit(1);
+            exit(18);
         }
     }
 
@@ -396,7 +396,7 @@ static void run_given_arguments(int num_args, char **args)
     }
     if (! lang) {
         fprintf(stderr, "Could not find language %s\n", language_name);
-        exit(1);
+        exit(19);
     }
 
     memcpy(&state.language, lang, sizeof(language_t));
@@ -421,9 +421,13 @@ int main(int argc, char *argv[])
             size_t sz = sizeof(buf_);
             int bytes_read = getline(&buf, &sz, stdin);
             if (bytes_read < 0) {
-                // We'll just assume this is EOF an not an error, since we're
-                // reading from stdin.
-                exit(0);
+                if (feof(stdin)) {
+                    exit(0);
+                }
+                else {
+                    fprintf(stderr, "Read error\n");
+                    exit(20);
+                }
             }
             else if (bytes_read > 0) {
                 static char *args[MAX_ARGS];
