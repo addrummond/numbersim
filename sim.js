@@ -24,6 +24,34 @@ function initRandomDistribution() {
     }
 }
 
+function initDirichletDistribution()
+{
+    function factorial(n) {
+        let r = 1;
+        while (n > 1)
+            r *= n--;
+        return r;
+    }
+
+    function g(n) {
+        return factorial(n-1);
+    }
+
+    function gamma(k, theta, x) {
+        return (1 / (g(k) * Math.pow(theta,k))) * Math.pow(x, k - 1) * Math.exp(-(x/theta));
+    }
+
+    let tot = 0;
+    for (let i = 0; i < MAX_CARDINALITY; ++i) {
+        let x = parseInt(Math.round(Math.random()*MAX_CARDINALITY)) + 1;
+        let v = gamma(MAX_CARDINALITY, 1, x);
+        rd[i] = v;
+        tot += v;
+    }
+    for (let i = 0; i < MAX_CARDINALITY; ++i)
+        rd[i] /= tot;
+}
+
 function getInitialArgs(seed1, seed2) {
     if (seed1 === undefined)
         seed1 = parseInt(Math.random()*Math.pow(2,64));
