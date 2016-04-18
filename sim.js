@@ -31,7 +31,7 @@ function getInitialArgs(seed1, seed2) {
         seed2 = parseInt(Math.random()*Math.pow(2,64));
 
     return (
-        "languages.txt " +
+        __dirname + "/languages.txt " +
         seed1 + ' ' + seed2 + ' ' +
         process.argv[2] + ' ' +
         BETA + ' ' +
@@ -44,7 +44,7 @@ function getInitialArgs(seed1, seed2) {
     );
 }
 
-let numbersim = child_process.spawn(__dirname + "/numbersim");
+let numbersim = child_process.spawn(__dirname + "/csim/numbersim");
 numbersim.stdout.setEncoding('utf-8');
 numbersim.stderr.setEncoding('utf-8');
 
