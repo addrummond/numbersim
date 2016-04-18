@@ -22,8 +22,8 @@
 //     9)    Number of trials to run (decimal integer between 0 and (2^64)-1 inclusive)
 //     10)   Output mode (either 'full' or 'summary')
 //     11)   If output mode is "summary', quit after all markers have been correct
-//           for at least this number of trials. This value is ignored for other
-//           output modes.
+//           for at least this number of trials. If 0, never quit early.
+//           This value is ignored for other output modes.
 //
 //     If argument (12) is "ztnbd", then no further arguments should be given,
 //     and the distribution of cardinalities is given by a zero-terminated
