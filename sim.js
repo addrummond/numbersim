@@ -10,7 +10,7 @@ const N_DISTRIBUTIONS = 100000;
 const N_RUNS = 500;
 const QUIT_AFTER_N_CORRECT = 200;
 
-let rd = new Array(MAX_CARDINALITY); // Declared outside of function to avoid allocation on every run.
+let rd = new Float64Array(MAX_CARDINALITY); // Declared outside of function to avoid allocation on every run.
 function initRandomDistribution() {
     let total = 0.0;
     for (let i = 0; i < rd.length; ++i) {
