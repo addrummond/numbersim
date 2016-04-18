@@ -6,7 +6,7 @@ const MAX_CARDINALITY = 7;
 const BETA = 0.6;
 const R = 3;
 const LEARNING_RATE = 0.01;
-const N_DISTRIBUTIONS = 100000;
+const N_DISTRIBUTIONS = 1000;
 const N_RUNS = 500;
 const QUIT_AFTER_N_CORRECT = 200;
 
@@ -68,6 +68,40 @@ numbersim.stdout.on('error', function (err) {
 });
 numbersim.stderr.pipe(process.stderr);
 
+let programs = { };
+programs.default = function () {
+    this.numberOfFails = new Uint32Array(MAX_CARDINALITY); // Will be initialized with zeros
+
+    this.setupDistribution = () => {
+       initRandomDistribution(rd);
+    };
+
+    this.handleLine = (cols) => {
+        if (cols.length != MAX_CARDINALITY + 2)
+            return;
+
+        for (let i = 0; i < MAX_CARDINALITY; ++i)
+            this.numberOfFails[i] += (parseInt(cols[i]) == -1 ? 1 : 0);
+
+        ++numRuns;
+        if (numRuns < N_DISTRIBUTIONS) {
+            doRun(seed1, seed2);
+        }
+        else {
+            printFinalReport();
+            process.exit(0);
+        }
+    };
+
+    this.printFinalReport = () => {
+        for (let i = 0; i < MAX_CARDINALITY; ++i) {
+            console.log(i+1, ((1-(this.numberOfFails[i]/N_DISTRIBUTIONS))*100) + '%');
+        }
+    };
+};
+
+let program = new programs.default;
+
 let currentBuffer = "";
 let currentBufferIndex = 0;
 let numRuns = 0;
@@ -83,42 +117,25 @@ numbersim.stdout.on('data', (data) => {
             let cols = left.split(",");
             currentBuffer = right;
             currentBufferIndex = 0;
-            handleLine(cols);
+            seed1 = parseInt(cols[cols.length-2]);
+            seed2 = parseInt(cols[cols.length-1]);
+            program.handleLine(cols);
+            ++numRuns;
+            if (numRuns < N_DISTRIBUTIONS) {
+                doRun(seed1, seed2);
+            }
+            else {
+                program.printFinalReport();
+                process.exit(0);
+            }
             break;
-        }
-    }
-
-    function handleLine(cols) {
-        if (cols.length != MAX_CARDINALITY + 2)
-            return;
-
-        for (let i = 0; i < MAX_CARDINALITY; ++i)
-            numberOfFails[i] += (parseInt(cols[i]) == -1 ? 1 : 0);
-
-        seed2 = parseInt(cols[cols.length-1]);
-        seed1 = parseInt(cols[cols.length-2]);
-
-        ++numRuns;
-        if (numRuns < N_DISTRIBUTIONS) {
-            doRun(seed1, seed2);
-        }
-        else {
-            printFinalReport();
-            process.exit(0);
         }
     }
 });
 
-function printFinalReport()
-{
-    for (let i = 0; i < MAX_CARDINALITY; ++i) {
-        console.log(i+1, ((1-(numberOfFails[i]/N_DISTRIBUTIONS))*100) + '%');
-    }
-}
-
 doRun();
 function doRun(seed1, seed2) {
-    initRandomDistribution();
+    program.setupDistribution();
     let cmd = getInitialArgs(seed1, seed2) + rd.join(' ') + '\n';
     //console.log("-->", cmd);
     numbersim.stdin.write(cmd, 'utf-8');
