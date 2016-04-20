@@ -1,6 +1,7 @@
 //
 // Example invocations:
 //
+//     numbersim languages.txt 4321 1234 english 0 0 0.01 7 1000 summary 100 0.143 0.143 0.143 0.143 0.143 0.143 0.143
 //     numbersim
 //
 // If invoked with no arguments, arguments are read line-by-line from stdin.
@@ -24,11 +25,11 @@
 //           This value is ignored for other output modes.
 //
 //     Argument (12) should be the first in a series of floating point
-//     values. The length of this series must be identical to the maximum
+//     values. The length of this series must be one less than the maximum
 //     cue cardinality. The values are intepreted as p values specifying a
-//     probability distribution. The values need not sum to 1.0, since it is
-//     assumed that any remaning probability mass is the probability for all
-//     cardinalities greater than specified by argument (8).
+//     probability distribution. The leftover probability mass is interpreted
+//     as the probability of a cue with at least the cardinality specified by
+//     argument (8).
 //
 
 #include <stdio.h>
@@ -177,7 +178,7 @@ static void run_trials(state_t *state, uint_fast64_t n)
         uint32_t r = pcg32_random_r(&(state->rand_state));
 
         // Determine the cardinality of the cue based on the random number.
-        for (card = 0; card < state->max_cue && r >= state->thresholds[card]; ++card);
+        for (card = 0; card < state->max_cue - 1 && r >= state->thresholds[card]; ++card);
 
         // Get the appropriate marker for that cardinality.
         marker_index = state->language.n_to_marker[card];
@@ -234,8 +235,9 @@ struct ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT_STRUCT {
     int ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT[(int)sizeof(unsigned long long) - (int)sizeof(uint64_t)];
 };
 
-// Guaranteed to be initialized to all zeroes (i.e. empty string).
-static char name_of_last_language[LANGUAGE_NAME_MAX_LENGTH];
+// Guaranteed to be initialized to all zeroes. This will have the consequence
+// that the name of the first language will initially be the empty string.
+static language_t languages[MAX_LANGUAGES];
 
 static void run_given_arguments(int num_args, char **args)
 {
@@ -321,45 +323,41 @@ static void run_given_arguments(int num_args, char **args)
 
     const unsigned DIST_ARGI = 11;
 
-    if (num_args != DIST_ARGI + state.max_cue) {
-        fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", num_args-DIST_ARGI, state.max_cue);
+    if (num_args != DIST_ARGI + state.max_cue - 1) {
+        fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", num_args-DIST_ARGI, state.max_cue-1);
         exit(16);
     }
-    double total = 0;
-    for (unsigned i = 0; i < 0 + state.max_cue; ++i) {
+    for (unsigned i = 0; i < 0 + state.max_cue - 1; ++i) {
         double p;
         if (sscanf(args[i+DIST_ARGI], "%lf", &p) < 1) {
             fprintf(stderr, "Error parsing probability value.\n");
             exit(17);
         }
-        total += p;
         state.thresholds[i] = (uint32_t)(UINT32_MAX * p);
         if (i > 0) {
             state.thresholds[i] += state.thresholds[i-1];
         }
     }
 
-    if (strcmp(name_of_last_language, language_name)) {
-        // Will be terminated by language with empty string as name.
-        static language_t languages[MAX_LANGUAGES];
-        get_languages(language_file_name, languages);
-        //test_print_languages(languages);
-
-        // Find the specified language.
-        language_t *lang = NULL;
+    // Find the specified language.
+    language_t *lang = NULL;
+    for (unsigned i = 0; i < 2; ++i) {
         for (language_t *l = languages; l->name[0] != '\0'; ++l) {
             if (! strcmp(l->name, language_name)) {
                 lang = l;
                 break;
             }
         }
-        if (! lang) {
-            fprintf(stderr, "Could not find language %s\n", language_name);
-            exit(19);
-        }
-
-        memcpy(&state.language, lang, sizeof(language_t));
+        if (lang)
+            break;
+        else
+            get_languages(language_file_name, languages);
     }
+    if (! lang) {
+        fprintf(stderr, "Could not find language %s\n", language_name);
+        exit(19);
+    }
+    memcpy(&state.language, lang, sizeof(language_t));
 
     double *as = (double *)(state.assocs);
     for (unsigned i = 0; i < sizeof(state.assocs)/sizeof(state.assocs[0][0]); ++i)
