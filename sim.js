@@ -11,7 +11,34 @@ const N_RUNS = 500;
 const QUIT_AFTER_N_CORRECT = 200;
 
 let rd = new Float64Array(MAX_CARDINALITY); // Declared outside of function to avoid allocation on every run.
-function initRandomDistribution() {
+
+function factorial(n) {
+    let r = 1;
+    while (n > 1)
+        r *= n--;
+    return r;
+}
+
+function ztnbd(k, beta, r)
+{
+    let top = r;
+    for (let i = 1; i < k; ++i)
+        top *= r + i;
+    top /= factorial(k) * (Math.pow(1.0+beta, r) - 1);
+    top *= Math.pow(beta/(1.0+beta), k);
+    return top;
+}
+
+function initZtnbDistribution(beta, r, rd) {
+    for (let i = 0; i < MAX_CARDINALITY; ++i) {
+        rd[i] = ztnbd(i+1, beta, r);
+    }
+    let sum = 0;
+    for (let i = 0; i < MAX_CARDINALITY; ++i)
+        sum += rd[i];
+}
+
+function initRandomDistribution(rd) {
     let total = 0.0;
     for (let i = 0; i < rd.length; ++i) {
         let r = Math.random();
@@ -24,15 +51,8 @@ function initRandomDistribution() {
     }
 }
 
-function initDirichletDistribution()
+function initDirichletDistribution(rd)
 {
-    function factorial(n) {
-        let r = 1;
-        while (n > 1)
-            r *= n--;
-        return r;
-    }
-
     function g(n) {
         return factorial(n-1);
     }
@@ -128,7 +148,49 @@ programs.default = function () {
     };
 };
 
-let program = new programs.default;
+programs.compare = function () {
+    this.state = 'random';
+    this.ztnbd = new Float64Array(MAX_CARDINALITY);
+    this.random = new Float64Array(MAX_CARDINALITY);
+    initZtnbDistribution(0.6, 3, this.ztnbd);
+
+    this.setupDistribution = () => {
+        if (this.state == 'random') {
+            rd = this.random;
+            initRandomDistribution(rd);
+            this.state = 'ztnbd';
+        }
+        else {
+            rd = this.ztnbd;
+            this.state = 'random';
+        }
+    };
+
+    this.handleLine = (cols) => {
+        if (this.state == 'random') {
+            // Compute distance from ztnbd.
+            let tot = 0;
+            for (let i = 0; i < this.random.length; ++i) {
+                let diff = this.ztnbd[i] - this.random[i];
+                tot += diff*diff;
+            }
+            tot = Math.sqrt(tot);
+
+            // Compute average success rate.
+            let succ = 0;
+            for (let i = 0; i < MAX_CARDINALITY; ++i) {
+                let v = parseFloat(cols[i]);
+                if (v != -1)
+                    succ += v;
+            }
+            succ /= MAX_CARDINALITY;
+
+            console.log(tot + ',' + succ);
+        }
+    };
+};
+
+let program = new programs.compare;
 
 let currentBuffer = "";
 let currentBufferIndex = 0;
@@ -153,7 +215,8 @@ numbersim.stdout.on('data', (data) => {
                 doRun(seed1, seed2);
             }
             else {
-                program.printFinalReport();
+                if (program.printFinalReport)
+                     program.printFinalReport();
                 process.exit(0);
             }
             break;

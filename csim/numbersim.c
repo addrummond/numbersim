@@ -1,7 +1,6 @@
 //
 // Example invocations:
 //
-//     numbersim languages.txt 4321 1234 english 0.6 3 0.01 7 1000 full ztnbd 100
 //     numbersim languages.txt 4321 1234 english 0 0 0.01 7 1000 summary 100 0.143 0.143 0.143 0.143 0.143 0.143 0.143
 //     numbersim
 //
@@ -25,14 +24,12 @@
 //           for at least this number of trials. If 0, never quit early.
 //           This value is ignored for other output modes.
 //
-//     If argument (12) is "ztnbd", then no further arguments should be given,
-//     and the distribution of cardinalities is given by a zero-terminated
-//     negative binomial distribution parameterized by arguments (5)-(6).
-//
-//     Otherwise, argument (12) should be the first in a series of floating point
+//     Argument (12) should be the first in a series of floating point
 //     values. The length of this series must be identical to the maximum
 //     cue cardinality. The values are intepreted as p values specifying a
-//     probability distribution.
+//     probability distribution. The values need not sum to 1.0, since it is
+//     assumed that any remaning probability mass is the probability for all
+//     cardinalities greater than specified by argument (8).
 //
 
 #include <stdio.h>
@@ -46,26 +43,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
-
-static unsigned factorial(uint_fast32_t n)
-{
-    assert(n > 0);
-
-    uint_fast32_t nn = n;
-    while (--nn > 0)
-        n *= nn;
-    return n;
-}
-
-static double ztnbd(uint_fast32_t k, double beta, double r)
-{
-    double top = r;
-    for (uint_fast32_t i = 1; i < k; ++i)
-        top *= r + (double)i;
-    top /= factorial(k) * (pow(1.0+beta, r) - 1);
-    top *= pow(beta/(1.0+beta), k);
-    return top;
-}
 
 typedef enum output_mode {
     OUTPUT_MODE_FULL,
@@ -340,44 +317,23 @@ static void run_given_arguments(int num_args, char **args)
         exit(14);
     }
 
-    const unsigned ZTNBD_ARGI = 11;
+    const unsigned DIST_ARGI = 11;
 
-    if (! strcmp(args[ZTNBD_ARGI], "ztnbd")) {
-        if (num_args > ZTNBD_ARGI+1) {
-            fprintf(stderr, "Unrecognized trailing arguments following ztnbd\n");
-            exit(15);
-        }
-        for (unsigned i = 0; i < state.max_cue; ++i) {
-            double p = ztnbd(i+1, beta, r);
-            assert(p >= 0 && p <= 1);
-            p *= UINT32_MAX;
-            state.thresholds[i] = (uint32_t)p;
-            if (i > 0) {
-                state.thresholds[i] += state.thresholds[i-1];
-            }
-        }
+    if (num_args != DIST_ARGI + state.max_cue) {
+        fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", num_args-DIST_ARGI, state.max_cue);
+        exit(16);
     }
-    else {
-        if (num_args != ZTNBD_ARGI + state.max_cue) {
-            fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", num_args-ZTNBD_ARGI, state.max_cue);
-            exit(16);
+    double total = 0;
+    for (unsigned i = 0; i < 0 + state.max_cue; ++i) {
+        double p;
+        if (sscanf(args[i+DIST_ARGI], "%lf", &p) < 1) {
+            fprintf(stderr, "Error parsing probability value.\n");
+            exit(17);
         }
-        double total = 0;
-        for (unsigned i = 0; i < 0 + state.max_cue; ++i) {
-            double p;
-            if (sscanf(args[i+ZTNBD_ARGI], "%lf", &p) < 1) {
-                fprintf(stderr, "Error parsing probability value.\n");
-                exit(17);
-            }
-            total += p;
-            state.thresholds[i] = (uint32_t)(UINT32_MAX * p);
-            if (i > 0) {
-                state.thresholds[i] += state.thresholds[i-1];
-            }
-        }
-        if (fabs(total - 1.0) > 0.01) {
-            fprintf(stderr, "p values do not sum to 1\n");
-            exit(18);
+        total += p;
+        state.thresholds[i] = (uint32_t)(UINT32_MAX * p);
+        if (i > 0) {
+            state.thresholds[i] += state.thresholds[i-1];
         }
     }
 
