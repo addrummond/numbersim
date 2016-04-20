@@ -1,7 +1,6 @@
 //
 // Example invocations:
 //
-//     numbersim languages.txt 4321 1234 english 0 0 0.01 7 1000 summary 100 0.143 0.143 0.143 0.143 0.143 0.143 0.143
 //     numbersim
 //
 // If invoked with no arguments, arguments are read line-by-line from stdin.
@@ -235,6 +234,9 @@ struct ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT_STRUCT {
     int ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT[(int)sizeof(unsigned long long) - (int)sizeof(uint64_t)];
 };
 
+// Guaranteed to be initialized to all zeroes (i.e. empty string).
+static char name_of_last_language[LANGUAGE_NAME_MAX_LENGTH];
+
 static void run_given_arguments(int num_args, char **args)
 {
     if (num_args < 12) {
@@ -337,34 +339,44 @@ static void run_given_arguments(int num_args, char **args)
         }
     }
 
-    // Terminated by language with empty string as name.
-    static language_t languages[MAX_LANGUAGES];
-    get_languages(language_file_name, languages);
-    //test_print_languages(languages);
+    if (strcmp(name_of_last_language, language_name)) {
+        // Will be terminated by language with empty string as name.
+        static language_t languages[MAX_LANGUAGES];
+        get_languages(language_file_name, languages);
+        //test_print_languages(languages);
 
-    // Find the specified language.
-    language_t *lang = NULL;
-    for (language_t *l = languages; l->name[0] != '\0'; ++l) {
-        if (! strcmp(l->name, language_name)) {
-            lang = l;
-            break;
+        // Find the specified language.
+        language_t *lang = NULL;
+        for (language_t *l = languages; l->name[0] != '\0'; ++l) {
+            if (! strcmp(l->name, language_name)) {
+                lang = l;
+                break;
+            }
         }
-    }
-    if (! lang) {
-        fprintf(stderr, "Could not find language %s\n", language_name);
-        exit(19);
+        if (! lang) {
+            fprintf(stderr, "Could not find language %s\n", language_name);
+            exit(19);
+        }
+
+        memcpy(&state.language, lang, sizeof(language_t));
     }
 
-    memcpy(&state.language, lang, sizeof(language_t));
     double *as = (double *)(state.assocs);
     for (unsigned i = 0; i < sizeof(state.assocs)/sizeof(state.assocs[0][0]); ++i)
         as[i] = 0.0;
+    double *cas = (double *)state.compound_cue_assocs;
+    for (unsigned i = 0; i < sizeof(state.compound_cue_assocs)/sizeof(state.compound_cue_assocs[0][0]); ++i)
+        cas[i] = 0.0;
+    memset(state.marker_has_been_correct_for_last, 0, sizeof(state.marker_has_been_correct_for_last));
 
     run_trials(&state, num_trials);
 }
 
 int main(int argc, char *argv[])
 {
+    // No need to free this as it is used until process exits.
+    char *buf = malloc(ARGS_STRING_MAX_LENGTH * sizeof(char));
+
     if (argc > 1) {
         run_given_arguments(argc - 1, argv + 1);
         printf("\n");
@@ -372,9 +384,7 @@ int main(int argc, char *argv[])
     }
     else {
         for (;;) {
-            static char buf_[ARGS_STRING_MAX_LENGTH];
-            char *buf = buf_;
-            size_t sz = sizeof(buf_);
+            size_t sz = ARGS_STRING_MAX_LENGTH * sizeof(char);
             int bytes_read = getline(&buf, &sz, stdin);
             if (bytes_read < 0) {
                 if (feof(stdin)) {
