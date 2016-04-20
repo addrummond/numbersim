@@ -6,7 +6,7 @@ const MAX_CARDINALITY = 7;
 const BETA = 0.6;
 const R = 3;
 const LEARNING_RATE = 0.01;
-const N_DISTRIBUTIONS = 1000;
+const N_DISTRIBUTIONS = 10000;
 const N_RUNS = 500;
 const QUIT_AFTER_N_CORRECT = 200;
 
@@ -121,7 +121,8 @@ programs.default = function () {
     this.numberOfFails = new Uint32Array(MAX_CARDINALITY); // Will be initialized with zeros
 
     this.setupDistribution = () => {
-       initRandomDistribution(rd);
+        initRandomDistribution(rd);
+        //initZtnbDistribution(0.6, 3, rd);
     };
 
     this.handleLine = (cols) => {
@@ -190,7 +191,7 @@ programs.compare = function () {
     };
 };
 
-let program = new programs.compare;
+let program = new programs.default;
 
 let currentBuffer = "";
 let currentBufferIndex = 0;
