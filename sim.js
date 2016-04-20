@@ -10,7 +10,7 @@ const N_DISTRIBUTIONS = 10000;
 const N_RUNS = 500;
 const QUIT_AFTER_N_CORRECT = 200;
 
-let rd = new Float64Array(MAX_CARDINALITY); // Declared outside of function to avoid allocation on every run.
+let rd = new Float64Array(MAX_CARDINALITY-1); // Declared outside of function to avoid allocation on every run.
 
 function factorial(n) {
     let r = 1;
@@ -30,16 +30,13 @@ function ztnbd(k, beta, r)
 }
 
 function initZtnbDistribution(beta, r, rd) {
-    for (let i = 0; i < MAX_CARDINALITY; ++i) {
+    for (let i = 0; i < MAX_CARDINALITY-1; ++i) {
         rd[i] = ztnbd(i+1, beta, r);
     }
-    let sum = 0;
-    for (let i = 0; i < MAX_CARDINALITY; ++i)
-        sum += rd[i];
 }
 
 function initRandomDistribution(rd) {
-    let total = 0.0;
+    let total = Math.random(); // The remaining probability mass for n=max_cardinality.
     for (let i = 0; i < rd.length; ++i) {
         let r = Math.random();
         total += r;
@@ -61,14 +58,14 @@ function initDirichletDistribution(rd)
         return (1 / (g(k) * Math.pow(theta,k))) * Math.pow(x, k - 1) * Math.exp(-(x/theta));
     }
 
-    let tot = 0;
-    for (let i = 0; i < MAX_CARDINALITY; ++i) {
+    let tot = gamma(MAX_CARDINALITY, 1, x);
+    for (let i = 0; i < MAX_CARDINALITY-1; ++i) {
         let x = parseInt(Math.round(Math.random()*MAX_CARDINALITY)) + 1;
         let v = gamma(MAX_CARDINALITY, 1, x);
         rd[i] = v;
         tot += v;
     }
-    for (let i = 0; i < MAX_CARDINALITY; ++i)
+    for (let i = 0; i < MAX_CARDINALITY-1; ++i)
         rd[i] /= tot;
 }
 
