@@ -157,22 +157,25 @@ static void output_range_summary(const state_t *state)
         uint_fast64_t start = 0;
         uint_fast64_t num_ranges = 0;
         uint_fast64_t j;
+        uint8_t v;
         for (j = 0; j < state->n_trials; ++j) {
-            uint8_t v = state->correct_at[i][j/8];
+            v = state->correct_at[i][j/8];
             v >>= (j % 8);
             v &= 1;
             if (! v) {
-                if (j - start > 0) {
+                if (j - start > 1) {
                     if (num_ranges != 0)
                         printf(":");
-                    printf("%llu-%llu", start, j);
+                    printf("%llu-%llu", start, j-1);
                     ++num_ranges;
                 }
                 start = j;
             }
         }
-        if (num_ranges == 0) {
-            printf("%llu-%llu", start, j-1);
+        if (v) {
+             if (num_ranges > 0)
+                 printf(":");
+             printf("%llu-%llu", start, j-1);
         }
     }
 
