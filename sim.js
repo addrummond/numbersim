@@ -14,7 +14,7 @@ let options = {
     r: 3,
     learning_rate: 0.01,
     n_distributions: 10000,
-    n_runs: 10000,
+    n_runs: 1000,
     quit_after_n_correct: 200
 };
 if (process.argv.length == 5) {
@@ -91,10 +91,10 @@ function initDirichletDistribution(rd)
         rd[i] /= tot;
 }
 
-function getInitialArgs(seed1, seed2) {
-    if (seed1 === undefined)
+function getInitialArgs(seed1, seed2, mode) {
+    if (seed1 == null)
         seed1 = parseInt(Math.random()*Math.pow(2,64));
-    if (seed2 === undefined)
+    if (seed2 == null)
         seed2 = parseInt(Math.random()*Math.pow(2,64));
 
     return (
@@ -104,7 +104,7 @@ function getInitialArgs(seed1, seed2) {
         options.learning_rate + ' ' +
         options.max_cardinality + ' ' +
         options.n_runs + ' ' +
-        'summary ' +
+        mode + ' ' +
         options.quit_after_n_correct + ' '
     );
 }
@@ -134,6 +134,25 @@ numbersim.stdout.on('error', function (err) {
 numbersim.stderr.pipe(process.stderr);
 
 let programs = { };
+
+programs.single = function () {
+    this.mode = 'full';
+
+    this.getMaxNumLines = () => {
+        return options.n_runs;
+    };
+
+    this.setupDistribution = () => {
+        initZtnbDistribution(0.6, 3, rd);
+    };
+
+    this.handleLine = (cols, numRuns) => {
+        console.log(cols.join(','));
+    };
+
+    this.printFinalReport = () => { };
+};
+
 programs.default = function () {
     this.gotItIn = new Array(options.max_cardinality);
     for (let i = 0; i < this.gotItIn.length; ++i) {
@@ -141,12 +160,18 @@ programs.default = function () {
     }
     this.gotAllIn = { };
 
+    this.mode = 'summary';
+
+    this.getMaxNumLines = () => {
+        return options.n_distributions;
+    };
+
     this.setupDistribution = () => {
         //initRandomDistribution(rd);
         initZtnbDistribution(0.6, 3, rd);
     };
 
-    this.handleLine = (cols, numRuns) => {
+    this.handleLine = (cols, numLines) => {
         if (cols.length != options.max_cardinality + 2)
             return;
 
@@ -173,14 +198,6 @@ programs.default = function () {
             else
                 ++(this.gotAllIn[max]);
         };
-
-        if (numRuns < options.n_distributions) {
-            doRun(seed1, seed2);
-        }
-        else {
-            printFinalReport();
-            process.exit(0);
-        }
     };
 
     this.printFinalReport = () => {
@@ -214,6 +231,12 @@ programs.compare = function () {
     this.random = new Float64Array(options.max_cardinality-1);
     initZtnbDistribution(0.6, 3, this.ztnbd);
 
+    this.mode = 'summary';
+
+    this.getMaxNumLines = () => {
+        return options.n_distributions;
+    };
+
     this.setupDistribution = () => {
         if (this.state == 'random') {
             rd = this.random;
@@ -226,7 +249,7 @@ programs.compare = function () {
         }
     };
 
-    this.handleLine = (cols, numRuns) => {
+    this.handleLine = (cols, numLines) => {
         if (this.state == 'random') {
             // Compute distance from ztnbd.
             let tot = 0;
@@ -259,8 +282,10 @@ progf = new progf;
 
 let currentBuffer = "";
 let currentBufferIndex = 0;
-let numRuns = 0;
-let seed1, seed2;
+let numLines = 0;
+let maxNumLines = progf.getMaxNumLines();
+let mode = progf.mode;
+let seed1 = null, seed2 = null;
 let numberOfFails = new Uint32Array(options.max_cardinality); // Will be initialized with zeros
 numbersim.stdout.on('data', (data) => {
     currentBuffer += data;
@@ -269,14 +294,16 @@ numbersim.stdout.on('data', (data) => {
         if (currentBuffer.charAt(currentBufferIndex) == '\n') {
             var left = currentBuffer.substr(0, currentBufferIndex);
             var right = currentBuffer.substr(currentBufferIndex+1);
-            let cols = left.split(",");
             currentBuffer = right;
             currentBufferIndex = 0;
-            seed1 = parseInt(cols[cols.length-2]);
-            seed2 = parseInt(cols[cols.length-1]);
-            progf.handleLine(cols, numRuns);
-            ++numRuns;
-            if (numRuns < options.n_distributions) {
+            let cols = left.split(",");
+            if (left.indexOf('->') == -1) {
+                seed1 = parseInt(cols[cols.length-2]);
+                seed2 = parseInt(cols[cols.length-1]);
+            }
+            progf.handleLine(cols, numLines);
+            ++numLines;
+            if (numLines < maxNumLines) {
                 doRun(seed1, seed2);
             }
             else {
@@ -292,7 +319,6 @@ numbersim.stdout.on('data', (data) => {
 doRun();
 function doRun(seed1, seed2) {
     progf.setupDistribution();
-    let cmd = getInitialArgs(seed1, seed2) + rd.join(' ') + '\n';
-    //console.log("-->", cmd);
+    let cmd = getInitialArgs(seed1, seed2, mode) + rd.join(' ') + '\n';
     numbersim.stdin.write(cmd, 'utf-8');
 }
