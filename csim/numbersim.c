@@ -349,11 +349,23 @@ static void run_given_arguments(int num_args, char **args)
     memcpy(&state.language, lang, sizeof(language_t));
 
     double *as = (double *)(state.assocs);
-    for (unsigned i = 0; i < sizeof(state.assocs)/sizeof(state.assocs[0][0]); ++i)
-        as[i] = 0.0;
+    double tot = 0;
+    for (unsigned i = 0; i < sizeof(state.assocs)/sizeof(state.assocs[0][0]); ++i) {
+        as[i] = ((double)pcg32_random_r(&(state.rand_state)))/UINT32_MAX;
+        tot += as[i];
+    }
+    for (unsigned i = 0; i < sizeof(state.assocs)/sizeof(state.assocs[0][0]); ++i) {
+        as[i] /= tot;
+    }
     double *cas = (double *)state.compound_cue_assocs;
-    for (unsigned i = 0; i < sizeof(state.compound_cue_assocs)/sizeof(state.compound_cue_assocs[0][0]); ++i)
-        cas[i] = 0.0;
+    tot = 0;
+    for (unsigned i = 0; i < sizeof(state.compound_cue_assocs)/sizeof(state.compound_cue_assocs[0][0]); ++i) {
+        cas[i] = ((double)pcg32_random_r(&(state.rand_state)))/UINT32_MAX;
+        tot += cas[i];
+    }
+    for (unsigned i = 0; i < sizeof(state.compound_cue_assocs)/sizeof(state.compound_cue_assocs[0][0]); ++i) {
+        cas[i] /= tot;
+    }
     memset(state.marker_has_been_correct_for_last, 0, sizeof(state.marker_has_been_correct_for_last));
 
     run_trials(&state, num_trials);
