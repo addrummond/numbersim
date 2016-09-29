@@ -111,7 +111,7 @@ static bool update_state(state_t *state, unsigned marker_index, uint_fast32_t ca
     if (state->output_mode == OUTPUT_MODE_SUMMARY) {
         // Check if we should quit now.
         for (unsigned i = 0; i < state->max_cue; ++i) {
-            if (state->marker_has_been_correct_for_last[i] < state->quit_after_n_correct)
+            if (state->quit_after_n_correct == 0 || state->marker_has_been_correct_for_last[i] < state->quit_after_n_correct)
                 return true; // Continue running
         }
 
@@ -155,28 +155,24 @@ static void output_range_summary(const state_t *state)
             printf(",");
         
         uint_fast64_t start = 0;
-        uint_fast64_t end = 0;
         uint_fast64_t num_ranges = 0;
-        for (unsigned j = 0; j < state->n_trials; ++j) {
-            if (j != 0)
-                printf(",");
-
+        uint_fast64_t j;
+        for (j = 0; j < state->n_trials; ++j) {
             uint8_t v = state->correct_at[i][j/8];
             v >>= (j % 8);
             v &= 1;
-            if (v) {
-                ++end;
-            }
-            else {
-                if (end - start > 0) {
+            if (! v) {
+                if (j - start > 0) {
                     if (num_ranges != 0)
                         printf(":");
-                    printf("%llu-%llu", start, end);
+                    printf("%llu-%llu", start, j);
                     ++num_ranges;
                 }
                 start = j;
-                end = j;
             }
+        }
+        if (num_ranges == 0) {
+            printf("%llu-%llu", start, j-1);
         }
     }
 
@@ -353,6 +349,9 @@ static void run_given_arguments(int num_args, char **args)
     }
     else if (! strcmp(output_mode_string, "summary")) {
         state.output_mode = OUTPUT_MODE_SUMMARY;
+    }
+    else if (! strcmp(output_mode_string, "range_summary")) {
+        state.output_mode = OUTPUT_MODE_RANGE_SUMMARY;
     }
     else {
         fprintf(stderr, "Bad value for output_mode (eighth argument, should be \"summary\" or \"full\")");
