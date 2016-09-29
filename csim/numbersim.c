@@ -149,7 +149,7 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
 static void output_range_summary(const state_t *state)
 {
     // For each cardinality, output the number of simulations which got
-    // it right for each n trials.ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT
+    // it right for each n trials.
     for (unsigned i = 0; i < state->max_cue; ++i) {
         if (i != 0)
             printf(",");
