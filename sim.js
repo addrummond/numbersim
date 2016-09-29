@@ -7,7 +7,7 @@ const BETA = 0.6;
 const R = 3;
 const LEARNING_RATE = 0.01;
 const N_DISTRIBUTIONS = 10000;
-const N_RUNS = 500;
+const N_RUNS = 1000;
 const QUIT_AFTER_N_CORRECT = 200;
 
 let rd = new Float64Array(MAX_CARDINALITY-1); // Declared outside of function to avoid allocation on every run.
@@ -30,7 +30,7 @@ function ztnbd(k, beta, r)
 }
 
 function initZtnbDistribution(beta, r, rd) {
-    for (let i = 0; i < MAX_CARDINALITY-1; ++i) {
+    for (let i = 0; i < MAX_CARDINALITY-1 && i < rd.length; ++i) {
         rd[i] = ztnbd(i+1, beta, r);
     }
 }
@@ -59,7 +59,7 @@ function initDirichletDistribution(rd)
     }
 
     let tot = gamma(MAX_CARDINALITY, 1, x);
-    for (let i = 0; i < MAX_CARDINALITY-1; ++i) {
+    for (let i = 0; i < MAX_CARDINALITY-1 && i < rd.length; ++i) {
         let x = parseInt(Math.round(Math.random()*MAX_CARDINALITY)) + 1;
         let v = gamma(MAX_CARDINALITY, 1, x);
         rd[i] = v;
@@ -118,8 +118,8 @@ programs.default = function () {
     this.numberOfFails = new Uint32Array(MAX_CARDINALITY); // Will be initialized with zeros
 
     this.setupDistribution = () => {
-        initRandomDistribution(rd);
-        //initZtnbDistribution(0.6, 3, rd);
+        //initRandomDistribution(rd);
+        initZtnbDistribution(0.6, 3, rd);
     };
 
     this.handleLine = (cols) => {
@@ -148,8 +148,8 @@ programs.default = function () {
 
 programs.compare = function () {
     this.state = 'random';
-    this.ztnbd = new Float64Array(MAX_CARDINALITY);
-    this.random = new Float64Array(MAX_CARDINALITY);
+    this.ztnbd = new Float64Array(MAX_CARDINALITY-1);
+    this.random = new Float64Array(MAX_CARDINALITY-1);
     initZtnbDistribution(0.6, 3, this.ztnbd);
 
     this.setupDistribution = () => {
@@ -165,6 +165,7 @@ programs.compare = function () {
     };
 
     this.handleLine = (cols) => {
+
         if (this.state == 'random') {
             // Compute distance from ztnbd.
             let tot = 0;
@@ -188,7 +189,7 @@ programs.compare = function () {
     };
 };
 
-let program = new programs.default;
+let program = new programs.compare;
 
 let currentBuffer = "";
 let currentBufferIndex = 0;

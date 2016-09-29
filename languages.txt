@@ -1,3 +1,4 @@
 english s 1 pl *
 dnd     d 2 nd *
 spp     s 1 pc 2 3 4 5 pl *
+duing   x 1 2 pl *
