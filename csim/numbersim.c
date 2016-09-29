@@ -14,22 +14,20 @@
 //     2)    First random seed (decimal integer between 0 and (2^64)-1 inclusive)
 //     3)    Second reandom seed (decimal integer between 0 and (2^64)-1 inclusive)
 //     4)    Language name
-//     5)    beta (param to ztnbd, value is 0.6 in original exp; this value ignored unless arg 9 is "ztnbd")
-//     6)    r (param to ztnbd, value is 3 in original exp; this value ignored unless arg 9 is "ztnbd")
-//     7)    learning rate (typical value is 0.01)
-//     8)    Maximum cue cardinality (7 in original experiment).
-//     9)    Number of trials to run (decimal integer between 0 and (2^64)-1 inclusive)
-//     10)   Output mode (either 'full' or 'summary')
-//     11)   If output mode is "summary', quit after all markers have been correct
+//     5)    learning rate (typical value is 0.01)
+//     6)    Maximum cue cardinality (7 in original experiment).
+//     7)    Number of trials to run (decimal integer between 0 and (2^64)-1 inclusive)
+//     8)    Output mode (either 'full' or 'summary')
+//     9)    If output mode is "summary', quit after all markers have been correct
 //           for at least this number of trials. If 0, never quit early.
 //           This value is ignored for other output modes.
 //
-//     Argument (12) should be the first in a series of floating point
+//     Argument (10) should be the first in a series of floating point
 //     values. The length of this series must be one less than the maximum
 //     cue cardinality. The values are intepreted as p values specifying a
 //     probability distribution. The leftover probability mass is interpreted
 //     as the probability of a cue with at least the cardinality specified by
-//     argument (8).
+//     argument (6).
 //
 
 #include <stdio.h>
@@ -267,17 +265,8 @@ static void run_given_arguments(int num_args, char **args)
 
     const char *language_name = args[3];
 
-    double beta, r;
-    if (sscanf(args[4], "%lf", &beta) < 1) {
-        fprintf(stderr, "Error parsing beta (fifth argument)\n");
-        exit(5);
-    }
-    if (sscanf(args[5], "%lf", &r) < 1) {
-        fprintf(stderr, "Error parsing r (sixth argument)\n");
-        exit(6);
-    }
-    if (sscanf(args[6], "%lf", &(state.learning_rate)) < 1) {
-        fprintf(stderr, "Error parsing learning_rate (seventh argument)\n");
+    if (sscanf(args[4], "%lf", &(state.learning_rate)) < 1) {
+        fprintf(stderr, "Error parsing learning_rate (fifth argument)\n");
         exit(7);
     }
     if (state.learning_rate <= 0) {
@@ -285,26 +274,26 @@ static void run_given_arguments(int num_args, char **args)
         exit(8);
     }
 
-    if (sscanf(args[7], "%u", &(state.max_cue)) < 1) {
-        fprintf(stderr, "Error parsing max_cue (eighth argument)\n");
+    if (sscanf(args[5], "%u", &(state.max_cue)) < 1) {
+        fprintf(stderr, "Error parsing max_cue (sixth argument)\n");
         exit(9);
     }
     if (state.max_cue == 0) {
-        fprintf(stderr, "max_cue (eighth argument) must be greater than 0\n");
+        fprintf(stderr, "max_cue (sixth argument) must be greater than 0\n");
         exit(10);
     }
     if (state.max_cue > MAX_CARDINALITY) {
-        fprintf(stderr, "Value of max_cue (eighth argument) is too big.\n");
+        fprintf(stderr, "Value of max_cue (sixth argument) is too big.\n");
         exit(11);
     }
 
     uint_fast64_t num_trials;
-    if (sscanf(args[8], "%llu", &num_trials) < 1) {
-        fprintf(stderr, "Error parsing number of trials (ninth argument)\n");
+    if (sscanf(args[6], "%llu", &num_trials) < 1) {
+        fprintf(stderr, "Error parsing number of trials (seventh argument)\n");
         exit(12);
     }
 
-    const char *output_mode_string = args[9];
+    const char *output_mode_string = args[7];
     if (! strcmp(output_mode_string, "full")) {
         state.output_mode = OUTPUT_MODE_FULL;
     }
@@ -312,16 +301,16 @@ static void run_given_arguments(int num_args, char **args)
         state.output_mode = OUTPUT_MODE_SUMMARY;
     }
     else {
-        fprintf(stderr, "Bad value for output_mode (tenth argument, should be \"summary\" or \"full\")");
+        fprintf(stderr, "Bad value for output_mode (eighth argument, should be \"summary\" or \"full\")");
         exit(13);
     }
 
-    if (sscanf(args[10], "%u", &(state.quit_after_n_correct)) < 1) {
-        fprintf(stderr, "Bad value for quit_after_n_correct (eleventh argument)\n");
+    if (sscanf(args[8], "%u", &(state.quit_after_n_correct)) < 1) {
+        fprintf(stderr, "Bad value for quit_after_n_correct (ninth argument)\n");
         exit(14);
     }
 
-    const unsigned DIST_ARGI = 11;
+    const unsigned DIST_ARGI = 9;
 
     if (num_args != DIST_ARGI + state.max_cue - 1) {
         fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", num_args-DIST_ARGI, state.max_cue-1);

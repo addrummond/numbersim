@@ -101,8 +101,6 @@ function getInitialArgs(seed1, seed2) {
         __dirname + "/languages.txt " +
         seed1 + ' ' + seed2 + ' ' +
         language + ' ' +
-        options.beta + ' ' +
-        options.r + ' ' +
         options.learning_rate + ' ' +
         options.max_cardinality + ' ' +
         options.n_runs + ' ' +
@@ -137,19 +135,44 @@ numbersim.stderr.pipe(process.stderr);
 
 let programs = { };
 programs.default = function () {
-    this.numberOfFails = new Uint32Array(options.max_cardinality); // Will be initialized with zeros
+    this.gotItIn = new Array(options.max_cardinality);
+    for (let i = 0; i < this.gotItIn.length; ++i) {
+        this.gotItIn[i] = { };
+    }
+    this.gotAllIn = { };
 
     this.setupDistribution = () => {
         //initRandomDistribution(rd);
         initZtnbDistribution(0.6, 3, rd);
     };
 
-    this.handleLine = (cols) => {
+    this.handleLine = (cols, numRuns) => {
         if (cols.length != options.max_cardinality + 2)
             return;
 
-        for (let i = 0; i < options.max_cardinality; ++i)
-            this.numberOfFails[i] += (parseInt(cols[i]) == -1 ? 1 : 0);
+        let got_all = true;
+        let max = 0;
+        for (let i = 0; i < options.max_cardinality; ++i) {
+            let v = parseInt(cols[i]);
+            if (v != -1) {
+                if (this.gotItIn[i][v] === undefined)
+                    this.gotItIn[i][v] = 1;
+                else
+                    ++(this.gotItIn[i][v]);
+                
+                if (v > max)
+                    max = v;
+            }
+            else {
+                got_all = false;
+            }
+        }
+        if (got_all) {
+            if (this.gotAllIn[max] === undefined)
+                this.gotAllIn[max] = 1;
+            else
+                ++(this.gotAllIn[max]);
+        };
 
         if (numRuns < options.n_distributions) {
             doRun(seed1, seed2);
@@ -161,9 +184,27 @@ programs.default = function () {
     };
 
     this.printFinalReport = () => {
-        for (let i = 0; i < options.max_cardinality; ++i) {
-            console.log(i+1, ((1-(this.numberOfFails[i]/options.n_distributions))*100) + '%');
+        let percentages = new Array(options.max_cardinality+1);
+        for (let i = 0; i < options.n_runs; ++i) {
+            // Calculate what percentage of learners got it correct by trial n
+            // for (a) each individual cardinality and (b) all cardinalities.
+            for (let c = 0; c < options.max_cardinality; ++c) {
+                let ks = Object.keys(this.gotItIn[c]);
+                ks = ks.filter((x) => x <= i);
+                let n = ks.reduce((tot, k) => tot + this.gotItIn[c][k], 0);
+                percentages[c] = n / options.n_distributions;
+            }
+            let ks = Object.keys(this.gotAllIn);
+            ks = ks.filter((x) => x <= i);
+            let n = ks.reduce((tot, k) => tot + this.gotAllIn[k], 0);
+            percentages[options.max_cardinality] = n / options.n_distributions;
+
+            console.log(percentages.join(','));
         }
+
+        //for (let i = 0; i < options.max_cardinality; ++i) {
+//            console.log(i+1, ((1-(this.numberOfFails[i]/options.n_distributions))*100) + '%');
+  //      }
     };
 };
 
@@ -185,7 +226,7 @@ programs.compare = function () {
         }
     };
 
-    this.handleLine = (cols) => {
+    this.handleLine = (cols, numRuns) => {
         if (this.state == 'random') {
             // Compute distance from ztnbd.
             let tot = 0;
@@ -209,11 +250,12 @@ programs.compare = function () {
     };
 };
 
-let progf = new programs[program];
+let progf = programs[program];
 if (progf === undefined) {
-    process.stderr.write("Bad program name");
+    process.stderr.write("Bad program name\n");
     process.exit(1);
 }
+progf = new progf;
 
 let currentBuffer = "";
 let currentBufferIndex = 0;
@@ -232,7 +274,7 @@ numbersim.stdout.on('data', (data) => {
             currentBufferIndex = 0;
             seed1 = parseInt(cols[cols.length-2]);
             seed2 = parseInt(cols[cols.length-1]);
-            progf.handleLine(cols);
+            progf.handleLine(cols, numRuns);
             ++numRuns;
             if (numRuns < options.n_distributions) {
                 doRun(seed1, seed2);
