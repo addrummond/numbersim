@@ -44,7 +44,8 @@
 
 typedef enum output_mode {
     OUTPUT_MODE_FULL,
-    OUTPUT_MODE_SUMMARY
+    OUTPUT_MODE_SUMMARY,
+    OUTPUT_MODE_RANGE_SUMMARY
 } output_mode_t;
 
 typedef struct state {
@@ -58,6 +59,8 @@ typedef struct state {
     pcg32_random_t rand_state;
     output_mode_t output_mode;
     uint_fast64_t marker_has_been_correct_for_last[MAX_CARDINALITY];
+    // Array of bitfields for each cardinality.
+    uint8_t *correct_at[MAX_CARDINALITY];
     unsigned quit_after_n_correct;
 } state_t;
 
@@ -96,10 +99,13 @@ static bool update_state(state_t *state, unsigned marker_index, uint_fast32_t ca
             }
             state->compound_cue_assocs[i][j] = sum;
         }
-        if (max_sum_marker_index == state->language.n_to_marker[i])
+        if (max_sum_marker_index == state->language.n_to_marker[i]) {
             ++(state->marker_has_been_correct_for_last[i]);
-        else
+            state->correct_at[i][state->n_trials / 8] |= (1 << (state->n_trials % 8));
+        }
+        else {
             state->marker_has_been_correct_for_last[i] = 0;
+        }
     }
 
     if (state->output_mode == OUTPUT_MODE_SUMMARY) {
@@ -138,6 +144,43 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
         printf(",%llu", state->marker_has_been_correct_for_last[i]);
     }
     printf(",%llu,%llu\n", state->rand_state.state, state->rand_state.inc);
+}
+
+static void output_range_summary(const state_t *state)
+{
+    // For each cardinality, output the number of simulations which got
+    // it right for each n trials.ASSERT_UNSIGNED_LONG_LONG_IS_AT_LEAST_64_BIT
+    for (unsigned i = 0; i < state->max_cue; ++i) {
+        if (i != 0)
+            printf(",");
+        
+        uint_fast64_t start = 0;
+        uint_fast64_t end = 0;
+        uint_fast64_t num_ranges = 0;
+        for (unsigned j = 0; j < state->n_trials; ++j) {
+            if (j != 0)
+                printf(",");
+
+            uint8_t v = state->correct_at[i][j/8];
+            v >>= (j % 8);
+            v &= 1;
+            if (v) {
+                ++end;
+            }
+            else {
+                if (end - start > 0) {
+                    if (num_ranges != 0)
+                        printf(":");
+                    printf("%llu-%llu", start, end);
+                    ++num_ranges;
+                }
+                start = j;
+                end = j;
+            }
+        }
+    }
+
+    printf("\n\n");
 }
 
 static void output_summary(const state_t *state)
@@ -188,8 +231,13 @@ static void run_trials(state_t *state, uint_fast64_t n)
 
     if (state->output_mode == OUTPUT_MODE_SUMMARY)
         output_summary(state);
+    else if (state->output_mode == OUTPUT_MODE_RANGE_SUMMARY)
+        output_range_summary(state);
 
     fflush(stdout);
+
+    for (unsigned i = 0; i < MAX_CARDINALITY; ++i)
+        free(state->correct_at[i]);
 }
 
 #define ARGS_STRING_MAX_LENGTH (1024*8)
@@ -293,6 +341,12 @@ static void run_given_arguments(int num_args, char **args)
         exit(12);
     }
 
+    for (unsigned i = 0; i < MAX_CARDINALITY; ++i) {
+        size_t sz = ((num_trials / 8) + 1) * sizeof(uint8_t);
+        state.correct_at[i] = malloc(sz);
+        memset(state.correct_at[i], 0, sz);
+    }
+
     const char *output_mode_string = args[7];
     if (! strcmp(output_mode_string, "full")) {
         state.output_mode = OUTPUT_MODE_FULL;
@@ -349,23 +403,11 @@ static void run_given_arguments(int num_args, char **args)
     memcpy(&state.language, lang, sizeof(language_t));
 
     double *as = (double *)(state.assocs);
-    double tot = 0;
-    for (unsigned i = 0; i < sizeof(state.assocs)/sizeof(state.assocs[0][0]); ++i) {
-        as[i] = ((double)pcg32_random_r(&(state.rand_state)))/UINT32_MAX;
-        tot += as[i];
-    }
-    for (unsigned i = 0; i < sizeof(state.assocs)/sizeof(state.assocs[0][0]); ++i) {
-        as[i] /= tot;
-    }
+    for (unsigned i = 0; i < sizeof(state.assocs)/sizeof(state.assocs[0][0]); ++i)
+        as[i] = (((double)pcg32_random_r(&(state.rand_state)))/(double)UINT32_MAX)*1.0;
     double *cas = (double *)state.compound_cue_assocs;
-    tot = 0;
-    for (unsigned i = 0; i < sizeof(state.compound_cue_assocs)/sizeof(state.compound_cue_assocs[0][0]); ++i) {
-        cas[i] = ((double)pcg32_random_r(&(state.rand_state)))/UINT32_MAX;
-        tot += cas[i];
-    }
-    for (unsigned i = 0; i < sizeof(state.compound_cue_assocs)/sizeof(state.compound_cue_assocs[0][0]); ++i) {
-        cas[i] /= tot;
-    }
+    for (unsigned i = 0; i < sizeof(state.compound_cue_assocs)/sizeof(state.compound_cue_assocs[0][0]); ++i)
+        cas[i] = (((double)pcg32_random_r(&(state.rand_state)))/(double)UINT32_MAX)*1.0;
     memset(state.marker_has_been_correct_for_last, 0, sizeof(state.marker_has_been_correct_for_last));
 
     run_trials(&state, num_trials);

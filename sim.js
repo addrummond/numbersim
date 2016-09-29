@@ -296,7 +296,12 @@ numbersim.stdout.on('data', (data) => {
             var right = currentBuffer.substr(currentBufferIndex+1);
             currentBuffer = right;
             currentBufferIndex = 0;
+
+            if (left.match(/^\s*$/))
+                continue;
+
             let cols = left.split(",");
+            
             if (left.indexOf('->') == -1) {
                 seed1 = parseInt(cols[cols.length-2]);
                 seed2 = parseInt(cols[cols.length-1]);
@@ -320,5 +325,6 @@ doRun();
 function doRun(seed1, seed2) {
     progf.setupDistribution();
     let cmd = getInitialArgs(seed1, seed2, mode) + rd.join(' ') + '\n';
+    //console.log("--->", cmd);
     numbersim.stdin.write(cmd, 'utf-8');
 }
