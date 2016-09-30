@@ -153,7 +153,6 @@ programs.single = function () {
     this.printFinalReport = () => { };
 };
 
-/*
 programs.default = function () {
     this.gotItIn = new Array(options.max_cardinality);
     for (let i = 0; i < this.gotItIn.length; ++i) {
@@ -221,9 +220,8 @@ programs.default = function () {
         }
     };
 };
-*/
 
-programs.xxx = function () {
+programs.multisim = function () {
     this.mode = 'range_summary';
 
     this.percentages = new Array(options.max_cardinality + 1);
@@ -255,24 +253,31 @@ programs.xxx = function () {
         let keys = Object.keys(this.percentages[this.percentages.length-1]);
         keys = keys.sort();
         let start = 0;
-        for (let i = 0; i < options.n_distributions; ++i) {
+        for (let i = 0; i < options.n_runs; ++i) {
             let total = 0;
+            let max_y = 0;
+            let max_y_j = 0;
             for (let j = start; j < keys.length; ++j) {
                 let pr = keys[j].split('-');
                 let x = parseInt(pr[0]);
                 let y = parseInt(pr[1]);
+
+                if (y > max_y) {
+                    max_y = y;
+                    max_y_j = j;
+                }
+
                 if (x > i) {
-                    start = j;
                     break;
                 }
                 if (i <= y) {
                     total += this.percentages[this.percentages.length-1][keys[j]];
                 }
             }
+            start = max_y_j;
+
             console.log(total / options.n_distributions);
         }
-
-        //console.log(this.percentages);
     };
 };
 
