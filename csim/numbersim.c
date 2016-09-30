@@ -215,7 +215,9 @@ static void output_range_summary(const state_t *state)
         printf("%0*llu-%0*llu", num_digits, start, num_digits, j-1);
     }
 
-    printf("\n\n");
+    // Output seed state for random number generator (so that subsequent runs
+    // can use them as the starting point).
+    printf(",%llu,%llu\n\n", state->rand_state.state, state->rand_state.inc);
 }
 
 static void output_summary(const state_t *state)

@@ -153,6 +153,7 @@ programs.single = function () {
     this.printFinalReport = () => { };
 };
 
+/*
 programs.default = function () {
     this.gotItIn = new Array(options.max_cardinality);
     for (let i = 0; i < this.gotItIn.length; ++i) {
@@ -218,10 +219,60 @@ programs.default = function () {
 
             console.log(percentages.join(','));
         }
+    };
+};
+*/
 
-        //for (let i = 0; i < options.max_cardinality; ++i) {
-//            console.log(i+1, ((1-(this.numberOfFails[i]/options.n_distributions))*100) + '%');
-  //      }
+programs.xxx = function () {
+    this.mode = 'range_summary';
+
+    this.percentages = new Array(options.max_cardinality + 1);
+    for (let i = 0; i < this.percentages.length; ++i)
+        this.percentages[i] = { };
+
+    this.getMaxNumLines = () => {
+        return options.n_distributions;
+    };
+
+    this.setupDistribution = () => {
+        initZtnbDistribution(0.6, 3, rd);
+    };
+
+    this.handleLine = (cols, numLines) => {
+        for (let i = 0; i < cols.length - 2; ++i) { // -2 to skip random seeds at end
+            let c = cols[i];
+            let ranges = c.split(':');
+            for (let j = 0; j < ranges.length; ++j) {
+                if (this.percentages[i][ranges[j]])
+                    ++(this.percentages[i][ranges[j]]);
+                else
+                    this.percentages[i][ranges[j]] = 1;
+            }
+        }
+    };
+
+    this.printFinalReport = () => {
+        let keys = Object.keys(this.percentages[this.percentages.length-1]);
+        keys = keys.sort();
+        let start = 0;
+        for (let i = 0; i < options.n_distributions; ++i) {
+            let total = 0;
+            for (let j = start; j < keys.length; ++j) {
+                let pr = keys[j].split('-');
+                let x = parseInt(pr[0]);
+                let y = parseInt(pr[1]);
+                if (x > i) {
+                    start = j;
+                    break;
+                }
+                if (i <= y) {
+                    total += this.percentages[this.percentages.length-1][keys[j]];
+                }
+            }
+            console.log(total / options.n_distributions);
+        }
+
+        //console.log(this.percentages);
     };
 };
 
@@ -292,7 +343,7 @@ numbersim.stdout.on('data', (data) => {
 
     for (; currentBufferIndex < currentBuffer.length; ++currentBufferIndex) {
         if (currentBuffer.charAt(currentBufferIndex) == '\n') {
-            var left = currentBuffer.substr(0, currentBufferIndex);
+            var left = currentBuffer.substr(1, currentBufferIndex);
             var right = currentBuffer.substr(currentBufferIndex+1);
             currentBuffer = right;
             currentBufferIndex = 0;
