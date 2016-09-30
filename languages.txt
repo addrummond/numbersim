@@ -1,4 +1,9 @@
-english s 1 pl *
-dnd     d 2 nd *
-spp     s 1 pc 2 3 4 5 pl *
-duing   x 1 2 pl *
+1,o       s 1 pl *
+12,o      dui 1 2 o *
+123,o     tri 1 2 3 o *
+1234,o    quad 1 2 3 4 o *
+2,o       m 2 e *
+23,o      m 2 3 e *
+234,o     m 2 3 4 e *
+1,2345,o  s 1 pc 2 3 4 5 pl *
+

@@ -78,16 +78,17 @@ void get_languages(const char *filename, language_t *languages)
             current_num_index = 0;
         }
 
-        if (state == 'i' && isalpha(c)) {
+
+        if (state == 'i' && isspace(c)) {
+            current_language->name[current_name_index] = '\0';
+            state = 's';
+        }
+        else if (state == 'i') {
             if (current_name_index + 1 >= LANGUAGE_NAME_MAX_LENGTH) {
                 fprintf(stderr, "[1] Language name too long in %s\n, line %i col %i", filename, line, col);
                 goto err;
             }
             current_language->name[current_name_index++] = c;
-        }
-        else if (state == 'i' && isspace(c)) {
-            current_language->name[current_name_index] = '\0';
-            state = 's';
         }
         else if (state == 's' && c == '\n') {
             state = 'r';
