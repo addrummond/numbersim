@@ -14,8 +14,7 @@ let options = {
     r: 3,
     learning_rate: 0.01,
     n_distributions: 10000,
-    n_runs: 1000,
-    quit_after_n_correct: 200
+    n_runs: 1000
 };
 if (process.argv.length == 5) {
     try {
@@ -104,8 +103,7 @@ function getInitialArgs(seed1, seed2, mode) {
         options.learning_rate + ' ' +
         options.max_cardinality + ' ' +
         options.n_runs + ' ' +
-        mode + ' ' +
-        options.quit_after_n_correct + ' '
+        mode + ' '
     );
 }
 
