@@ -16,7 +16,8 @@ let options = {
     n_distributions: 10000,
     n_runs: 1000,
     seed1: parseInt(Math.random()*Math.pow(2,64)),
-    seed2: parseInt(Math.random()*Math.pow(2,64))
+    seed2: parseInt(Math.random()*Math.pow(2,64)),
+    distribution: 'ztnbd'
 };
 if (process.argv.length == 5) {
     try {
@@ -69,6 +70,17 @@ function initRandomDistribution(rd) {
     for (let i = 0; i < rd.length; ++i) {
         rd[i] /= total;
     }
+}
+
+function initDistributionFromOptions(options, rd) {
+    if (options.distribution == 'ztnbd')
+        initZtnbDistribution(0.6, 3, rd);
+    else
+        initRandomDistribution(rd);
+}
+function reinitDistributionFromOptions(options, rd) {
+    if (options.distribution == 'random')
+        initDistributionFromOptions(options, rd);
 }
 
 function initDirichletDistribution(rd)
@@ -148,6 +160,22 @@ programs.single = function () {
     this.printFinalReport = () => { };
 };
 
+programs.compare = function () {
+    this.mode = 'range_summary';
+
+    this.percentages = new Array(options.max_cardinality + 1);
+    for (let i = 0; i < this.percentages.length; ++i)
+        this.percentages[i] = { };
+    
+    this.getMaxNumLines = () => {
+        return options.n_distributions;
+    };
+
+    this.setupDistribution = () => {
+        initRandomDistribution(rd);
+    };
+}
+
 programs.multisim = function () {
     this.mode = 'range_summary';
 
@@ -160,7 +188,7 @@ programs.multisim = function () {
     };
 
     this.setupDistribution = () => {
-        initZtnbDistribution(0.6, 3, rd);
+        initDistributionFromOptions(options, rd);
     };
 
     this.handleLine = (cols, numLines) => {
@@ -174,6 +202,7 @@ programs.multisim = function () {
                     this.percentages[i][ranges[j]] = 1;
             }
         }
+        reinitDistributionFromOptions(options, rd);
     };
 
     this.printFinalReport = () => {
