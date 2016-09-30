@@ -148,6 +148,13 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
 
 static void output_range_summary(const state_t *state)
 {
+    // We want to print numbers in ranges with a constant number of digits
+    // to make sorting easier. So we need to find the number of digits
+    // required to print state->n_trials - 1. See:
+    //     http://stackoverflow.com/a/7200873/376854
+    // for an explanation of this cute trick.
+    unsigned num_digits = snprintf(0, 0, "%llu", state->n_trials)-1;
+
     // For each cardinality, output the number of simulations which got
     // it right for each n trials (using ranges to make the output more compact).
     for (unsigned i = 0; i < state->max_cue; ++i) {
@@ -166,7 +173,7 @@ static void output_range_summary(const state_t *state)
                 if (j - start > 1) {
                     if (num_ranges != 0)
                         printf(":");
-                    printf("%llu-%llu", start, j-1);
+                    printf("%0*llu-%0*llu", num_digits, start, num_digits, j-1);
                     ++num_ranges;
                 }
                 start = j;
@@ -175,7 +182,7 @@ static void output_range_summary(const state_t *state)
         if (v) {
              if (num_ranges > 0)
                  printf(":");
-             printf("%llu-%llu", start, j-1);
+             printf("%0*llu-%0*llu", num_digits, start, num_digits, j-1);
         }
     }
     printf(",");
@@ -196,7 +203,7 @@ static void output_range_summary(const state_t *state)
             if (j - start > 1) {
                 if (num_ranges != 0)
                     printf(":");
-                printf("%llu-%llu", start, j-1);
+                printf("%0*llu-%0*llu", num_digits, start, num_digits, j-1);
                 ++num_ranges;
             }
             start = j;
@@ -205,7 +212,7 @@ static void output_range_summary(const state_t *state)
     if (v) {
         if (num_ranges > 0)
             printf(":");
-        printf("%llu-%llu", start, j-1);
+        printf("%0*llu-%0*llu", num_digits, start, num_digits, j-1);
     }
 
     printf("\n\n");
