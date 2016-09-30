@@ -153,7 +153,7 @@ static void output_range_summary(const state_t *state)
     // required to print state->n_trials - 1. See:
     //     http://stackoverflow.com/a/7200873/376854
     // for an explanation of this cute trick.
-    unsigned num_digits = snprintf(0, 0, "%llu", state->n_trials)-1;
+    unsigned num_digits = snprintf(0, 0, "%llu", state->n_trials);
 
     // For each cardinality, output the number of simulations which got
     // it right for each n trials (using ranges to make the output more compact).
