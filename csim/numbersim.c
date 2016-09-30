@@ -17,7 +17,7 @@
 //     5)    learning rate (typical value is 0.01)
 //     6)    Maximum cue cardinality (7 in original experiment).
 //     7)    Number of trials to run (decimal integer between 0 and (2^64)-1 inclusive)
-//     8)    Output mode (either 'full' or 'summary')
+//     8)    Output mode (either 'full', 'summary', or 'range_summary')
 //     9)    If output mode is "summary', quit after all markers have been correct
 //           for at least this number of trials. If 0, never quit early.
 //           This value is ignored for other output modes.
