@@ -14,19 +14,21 @@ let options = {
     r: 3,
     learning_rate: 0.01,
     n_distributions: 10000,
-    n_runs: 1000
+    n_runs: 1000,
+    seed1: parseInt(Math.random()*Math.pow(2,64)),
+    seed2: parseInt(Math.random()*Math.pow(2,64))
 };
 if (process.argv.length == 5) {
     try {
         let j = JSON.parse(process.argv[4]);
-        for (k in j) {
+        for (let k in j) {
             if (! ({}).hasOwnProperty.call(j, k))
                 continue;
             options[k] = j[k];
         }
     }
     catch (e) {
-        process.stderr.write("Bad JSON passed as third argument\n");
+        process.stderr.write("Bad JSON passed as third argument |" + process.argv[4] + "|\n");
         process.exit(1);
     }
 }
@@ -91,11 +93,6 @@ function initDirichletDistribution(rd)
 }
 
 function getInitialArgs(seed1, seed2, mode) {
-    if (seed1 == null)
-        seed1 = parseInt(Math.random()*Math.pow(2,64));
-    if (seed2 == null)
-        seed2 = parseInt(Math.random()*Math.pow(2,64));
-
     return (
         __dirname + "/languages.txt " +
         seed1 + ' ' + seed2 + ' ' +
@@ -265,7 +262,7 @@ numbersim.stdout.on('data', (data) => {
 doRun();
 function doRun(seed1, seed2) {
     progf.setupDistribution();
-    let cmd = getInitialArgs(seed1, seed2, mode) + rd.join(' ') + '\n';
+    let cmd = getInitialArgs(seed1 ? seed1 : options.seed1, seed2 ? seed2 : options.seed2, mode) + rd.join(' ') + '\n';
     //console.log("--->", cmd);
     numbersim.stdin.write(cmd, 'utf-8');
 }
