@@ -211,54 +211,6 @@ programs.multisim = function () {
     };
 };
 
-programs.compare = function () {
-    this.state = 'random';
-    this.ztnbd = new Float64Array(options.max_cardinality-1);
-    this.random = new Float64Array(options.max_cardinality-1);
-    initZtnbDistribution(0.6, 3, this.ztnbd);
-
-    this.mode = 'summary';
-
-    this.getMaxNumLines = () => {
-        return options.n_distributions;
-    };
-
-    this.setupDistribution = () => {
-        if (this.state == 'random') {
-            rd = this.random;
-            initRandomDistribution(rd);
-            this.state = 'ztnbd';
-        }
-        else {
-            rd = this.ztnbd;
-            this.state = 'random';
-        }
-    };
-
-    this.handleLine = (cols, numLines) => {
-        if (this.state == 'random') {
-            // Compute distance from ztnbd.
-            let tot = 0;
-            for (let i = 0; i < this.random.length; ++i) {
-                let diff = this.ztnbd[i] - this.random[i];
-                tot += diff*diff;
-            }
-            tot = Math.sqrt(tot);
-
-            // Compute average success rate.
-            let succ = 0;
-            for (let i = 0; i < options.max_cardinality; ++i) {
-                let v = parseFloat(cols[i]);
-                if (v != -1)
-                    succ += v;
-            }
-            succ /= options.max_cardinality;
-
-            console.log(tot + ',' + succ);
-        }
-    };
-};
-
 let progf = programs[program];
 if (progf === undefined) {
     process.stderr.write("Bad program name\n");
