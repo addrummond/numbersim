@@ -180,7 +180,10 @@ programs.multisim = function () {
     };
 
     this.printFinalReport = () => {
-        let keys = Object.keys(this.percentages[this.percentages.length-1]);
+        // Currently we just print percentages for all cardinalities.
+        let percentage_all_right = this.percentages[this.percentages.length-1];
+
+        let keys = Object.keys(percentage_all_right);
         keys = keys.sort();
         let start = 0;
         for (let i = 0; i < options.n_runs; ++i) {
@@ -201,7 +204,7 @@ programs.multisim = function () {
                     break;
                 }
                 if (i <= y) {
-                    total += this.percentages[this.percentages.length-1][keys[j]];
+                    total += percentage_all_right[keys[j]];
                 }
             }
             start = max_y_j;
