@@ -149,7 +149,7 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
 static void output_range_summary(const state_t *state)
 {
     // For each cardinality, output the number of simulations which got
-    // it right for each n trials.
+    // it right for each n trials (using ranges to make the output more compact).
     for (unsigned i = 0; i < state->max_cue; ++i) {
         if (i != 0)
             printf(",");
@@ -157,7 +157,7 @@ static void output_range_summary(const state_t *state)
         uint_fast64_t start = 0;
         uint_fast64_t num_ranges = 0;
         uint_fast64_t j;
-        uint8_t v;
+        uint_fast8_t v = 0;
         for (j = 0; j < state->n_trials; ++j) {
             v = state->correct_at[i][j/8];
             v >>= (j % 8);
@@ -177,6 +177,35 @@ static void output_range_summary(const state_t *state)
                  printf(":");
              printf("%llu-%llu", start, j-1);
         }
+    }
+    printf(",");
+    // Same thing but right for every cardinality for n trials.
+    uint_fast64_t start = 0;
+    uint_fast64_t num_ranges = 0;
+    uint_fast64_t j;
+    uint_fast8_t v = 0;
+    for (j = 0; j < state->n_trials; ++j) {
+        v = 1;
+        for (unsigned c = 0; c < state->max_cue; ++c) {
+            uint_fast8_t vv = state->correct_at[c][j/8];
+            vv >>= (j % 8);
+            vv &= 1;
+            v &= vv;
+        }
+        if (! v) {
+            if (j - start > 1) {
+                if (num_ranges != 0)
+                    printf(":");
+                printf("%llu-%llu", start, j-1);
+                ++num_ranges;
+            }
+            start = j;
+        } 
+    }
+    if (v) {
+        if (num_ranges > 0)
+            printf(":");
+        printf("%llu-%llu", start, j-1);
     }
 
     printf("\n\n");
