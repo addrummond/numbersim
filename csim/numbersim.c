@@ -17,9 +17,12 @@
 //     5)    learning rate (typical value is 0.01)
 //     6)    Maximum cue cardinality (7 in original experiment).
 //     7)    Number of trials to run (decimal integer between 0 and (2^64)-1 inclusive)
-//     8)    Output mode (either 'full', or 'range_summary')
+//     8)    Output mode (either 'full', 'summary' or 'range_summary')
+//     9)    If output mode is "summary', quit after all markers have been correct
+//           for at least this number of trials. If 0, never quit early.
+//           This value is ignored for other output modes.
 //
-//     Argument (11) should be the first in a series of floating point
+//     Argument (10) should be the first in a series of floating point
 //     values. The length of this series must be one less than the maximum
 //     cue cardinality. The values are intepreted as p values specifying a
 //     probability distribution. The leftover probability mass is interpreted
@@ -41,6 +44,7 @@
 
 typedef enum output_mode {
     OUTPUT_MODE_FULL,
+    OUTPUT_MODE_SUMMARY,
     OUTPUT_MODE_RANGE_SUMMARY
 } output_mode_t;
 
@@ -57,6 +61,7 @@ typedef struct state {
     uint_fast64_t marker_has_been_correct_for_last[MAX_CARDINALITY];
     // Array of bitfields for each cardinality.
     uint8_t *correct_at[MAX_CARDINALITY];
+    unsigned quit_after_n_correct;
 } state_t;
 
 static void update_state_helper(state_t *state, unsigned marker_index, uint_fast32_t cardinality, double l)
@@ -103,7 +108,17 @@ static bool update_state(state_t *state, unsigned marker_index, uint_fast32_t ca
         }
     }
 
-    return true; // Continue running.
+   if (state->output_mode == OUTPUT_MODE_SUMMARY) {
+       // Check if we should quit now.
+       for (unsigned i = 0; i < state->max_cue; ++i) {
+           if (state->quit_after_n_correct == 0 || state->marker_has_been_correct_for_last[i] < state->quit_after_n_correct)
+               return true; // Continue running
+       }
+       return false; // Quit.
+   }
+   else {
+       return true; // Continue running.
+   }
 }
 
 static void output_headings(const state_t *state)
@@ -128,6 +143,28 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
         printf(",%llu", state->marker_has_been_correct_for_last[i]);
     }
     printf(",%llu,%llu\n", state->rand_state.state, state->rand_state.inc);
+}
+
+static void output_summary(const state_t *state)
+{
+    // Output the number of trials which it took to get the right marker
+    // for each cardinality for a sequence of at least the specified number of
+    // trials.
+    for (unsigned i = 0; i < state->max_cue; ++i) {
+        if (i != 0)
+            printf(",");
+
+        uint_fast64_t correct_for = state->marker_has_been_correct_for_last[i];
+        if (correct_for < state->quit_after_n_correct)
+            // This marker was never correct for the required number of trials.
+            printf("-1");
+        else
+            printf("%llu", state->n_trials - correct_for + state->quit_after_n_correct);
+    }
+
+    // Output seed state for random number generator (so that subsequent runs
+    // can use them as the starting point).
+    printf(",%llu,%llu", state->rand_state.state, state->rand_state.inc);
 }
 
 static void output_range_summary(const state_t *state)
@@ -206,7 +243,9 @@ static void output_range_summary(const state_t *state)
 
 static void run_trials(state_t *state, uint_fast64_t n)
 {
-    if (state->output_mode == OUTPUT_MODE_FULL)
+    if (state->output_mode == OUTPUT_MODE_SUMMARY)
+        output_summary(state);
+    else if (state->output_mode == OUTPUT_MODE_RANGE_SUMMARY)
         output_headings(state);
 
     uint_fast32_t card = 0;
@@ -348,6 +387,9 @@ static void run_given_arguments(int num_args, char **args)
     if (! strcmp(output_mode_string, "full")) {
         state.output_mode = OUTPUT_MODE_FULL;
     }
+    else if (! strcmp(output_mode_string, "summary")) {
+        state.output_mode = OUTPUT_MODE_SUMMARY;
+    }
     else if (! strcmp(output_mode_string, "range_summary")) {
         state.output_mode = OUTPUT_MODE_RANGE_SUMMARY;
     }
@@ -356,7 +398,12 @@ static void run_given_arguments(int num_args, char **args)
         exit(13);
     }
 
-    const unsigned DIST_ARGI = 8;
+    if (sscanf(args[8], "%u", &(state.quit_after_n_correct)) < 1) {
+        fprintf(stderr, "Bad value for quit_after_n_correct (ninth argument)\n");
+        exit(14);
+    }
+
+    const unsigned DIST_ARGI = 9;
 
     if (num_args != DIST_ARGI + state.max_cue - 1) {
         fprintf(stderr, "Incorrect number of p values for probability distribution (%u given, %u required)\n", num_args-DIST_ARGI, state.max_cue-1);
