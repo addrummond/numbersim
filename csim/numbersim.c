@@ -59,6 +59,7 @@ typedef struct state {
     pcg32_random_t rand_state;
     output_mode_t output_mode;
     uint_fast64_t marker_has_been_correct_for_last[MAX_CARDINALITY];
+    uint_fast64_t all_markers_have_been_correct_for_last;
     // Array of bitfields for each cardinality.
     uint8_t *correct_at[MAX_CARDINALITY];
     unsigned quit_after_n_correct;
@@ -86,6 +87,7 @@ static bool update_state(state_t *state, unsigned marker_index, uint_fast32_t ca
         update_state_helper(state, i, cardinality, i == marker_index ? 1.0 : 0.0);
     }
 
+    unsigned correct_for = 0;
     for (unsigned i = 0; i < state->max_cue; ++i) {
         double max_sum = 0.0;
         unsigned max_sum_marker_index;
@@ -100,6 +102,7 @@ static bool update_state(state_t *state, unsigned marker_index, uint_fast32_t ca
             state->compound_cue_assocs[i][j] = sum;
         }
         if (max_sum_marker_index == state->language.n_to_marker[i]) {
+            ++correct_for;
             ++(state->marker_has_been_correct_for_last[i]);
             state->correct_at[i][state->n_trials / 8] |= (1 << (state->n_trials % 8));
         }
@@ -108,17 +111,22 @@ static bool update_state(state_t *state, unsigned marker_index, uint_fast32_t ca
         }
     }
 
-   if (state->output_mode == OUTPUT_MODE_SUMMARY) {
-       // Check if we should quit now.
-       for (unsigned i = 0; i < state->max_cue; ++i) {
-           if (state->quit_after_n_correct == 0 || state->marker_has_been_correct_for_last[i] < state->quit_after_n_correct)
-               return true; // Continue running
-       }
-       return false; // Quit.
-   }
-   else {
-       return true; // Continue running.
-   }
+    printf("%u, %u, %llu\n", correct_for, state->max_cue, state->all_markers_have_been_correct_for_last);
+    if (correct_for == state->max_cue) {
+        ++(state->all_markers_have_been_correct_for_last);
+    }
+    else {
+        state->all_markers_have_been_correct_for_last = 0;
+    }
+
+    if (state->output_mode == OUTPUT_MODE_SUMMARY) {
+        // Check if we should quit now.
+        return (state->quit_after_n_correct == 0 ||
+                (state->all_markers_have_been_correct_for_last < state->quit_after_n_correct));
+    }
+    else {
+        return true; // Continue running.
+    }
 }
 
 static void output_headings(const state_t *state)
@@ -147,6 +155,10 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
 
 static void output_summary(const state_t *state)
 {
+    for (unsigned i = 0; i < state->max_cue; ++i) {
+        printf("::%llu, %llu\n", state->marker_has_been_correct_for_last[i], state->all_markers_have_been_correct_for_last);
+    }
+
     // Output the number of trials which it took to get the right marker
     // for each cardinality for a sequence of at least the specified number of
     // trials.
@@ -159,12 +171,15 @@ static void output_summary(const state_t *state)
             // This marker was never correct for the required number of trials.
             printf("-1");
         else
-            printf("%llu", state->n_trials - correct_for + state->quit_after_n_correct);
+            printf("%llu", state->n_trials - state->marker_has_been_correct_for_last[i]);
     }
+
+    // For all cardinalities.
+    printf(",%llu", state->n_trials - state->all_markers_have_been_correct_for_last);
 
     // Output seed state for random number generator (so that subsequent runs
     // can use them as the starting point).
-    printf(",%llu,%llu", state->rand_state.state, state->rand_state.inc);
+    printf(",%llu,%llu\n\n", state->rand_state.state, state->rand_state.inc);
 }
 
 static void output_range_summary(const state_t *state)
