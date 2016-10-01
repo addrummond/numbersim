@@ -112,7 +112,6 @@ function distributionDiff(d1, d2) {
         d2Ptot += d2[i];
 
         tot += d1[i] * Math.log(d1[i]/d2[i]);
-
     }
     let d1Last = (1 - d1Ptot);
     let d2Last = (1 - d2Ptot);
