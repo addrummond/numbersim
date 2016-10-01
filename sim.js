@@ -104,7 +104,24 @@ function initDirichletDistribution(rd)
         rd[i] /= tot;
 }
 
-function getInitialArgs(seed1, seed2, mode) {
+function distributionDiff(d1, d2) {
+    let tot = 0;
+    let d1Ptot = 0, d2Ptot = 0;
+    for (let i = 0; i < d1.length; ++i) {
+        d1Ptot += d1[i];
+        d2Ptot += d2[i];
+
+        tot += d1[i] * Math.log(d1[i]/d2[i]);
+
+    }
+    let d1Last = (1 - d1Ptot);
+    let d2Last = (1 - d2Ptot);
+    tot += d1Last * Math.log(d1Last/d2Last);
+
+    return tot;
+}
+
+function getInitialArgs(seed1, seed2, mode, stopAfterNCorrect) {
     return (
         __dirname + "/languages.txt " +
         seed1 + ' ' + seed2 + ' ' +
@@ -112,7 +129,8 @@ function getInitialArgs(seed1, seed2, mode) {
         options.learning_rate + ' ' +
         options.max_cardinality + ' ' +
         options.n_runs + ' ' +
-        mode + ' '
+        mode + ' ' +
+        (stopAfterNCorrect || '0') + ' '
     );
 }
 
@@ -161,11 +179,14 @@ programs.single = function () {
 };
 
 programs.compare = function () {
-    this.mode = 'range_summary';
+    this.mode = 'summary';
 
-    this.percentages = new Array(options.max_cardinality + 1);
-    for (let i = 0; i < this.percentages.length; ++i)
-        this.percentages[i] = { };
+    this.getQuitAfterN = () => 50;
+
+    this.ztnbd = new Float64Array(options.max_cardinality-1);
+    initZtnbDistribution(0.6, 3, this.ztnbd);
+
+    this.diffToN = { };
     
     this.getMaxNumLines = () => {
         return options.n_distributions;
@@ -174,10 +195,27 @@ programs.compare = function () {
     this.setupDistribution = () => {
         initRandomDistribution(rd);
     };
+
+    this.handleLine = (cols, numLines) => {
+        let allCorrectAfter = parseInt(cols[cols.length-3]);
+        let diff = distributionDiff(this.ztnbd, rd);
+        this.diffToN[diff] = allCorrectAfter;
+
+        initRandomDistribution(rd);
+    };
+
+    this.printFinalReport = () => {
+        for (let k in this.diffToN) {
+            if (! ({ }).hasOwnProperty.call(this.diffToN, k))
+                continue;
+            
+            console.log(k + "," + this.diffToN[k]);
+        }
+    };
 }
 
 programs.multisim = function () {
-    this.mode = 'range_summary';
+    this.mode = 'range_summary';    
 
     this.percentages = new Array(options.max_cardinality + 1);
     for (let i = 0; i < this.percentages.length; ++i)
@@ -291,6 +329,9 @@ numbersim.stdout.on('data', (data) => {
 doRun();
 function doRun(seed1, seed2) {
     progf.setupDistribution();
+    let quitAfterN = 0;
+    if (progf.getQuitAfterN)
+        quitAfterN = progf.getQuitAfterN();
     let cmd = getInitialArgs(seed1 ? seed1 : options.seed1, seed2 ? seed2 : options.seed2, mode) + rd.join(' ') + '\n';
     //console.log("--->", cmd);
     numbersim.stdin.write(cmd, 'utf-8');

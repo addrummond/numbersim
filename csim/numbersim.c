@@ -164,13 +164,16 @@ static void output_summary(const state_t *state)
         uint_fast64_t correct_for = state->marker_has_been_correct_for_last[i];
         if (correct_for < state->quit_after_n_correct)
             // This marker was never correct for the required number of trials.
-            printf("-1");
+            printf("%llu", state->n_trials);
         else
             printf("%llu", state->n_trials - state->marker_has_been_correct_for_last[i]);
     }
 
     // For all cardinalities.
-    printf(",%llu", state->n_trials - state->all_markers_have_been_correct_for_last);
+    if (state->all_markers_have_been_correct_for_last < state->quit_after_n_correct)
+        printf(",%llu", state->n_trials);
+    else
+        printf(",%llu", state->n_trials - state->all_markers_have_been_correct_for_last);
 
     // Output seed state for random number generator (so that subsequent runs
     // can use them as the starting point).
@@ -458,6 +461,7 @@ static void run_given_arguments(int num_args, char **args)
     for (unsigned i = 0; i < sizeof(state.compound_cue_assocs)/sizeof(state.compound_cue_assocs[0][0]); ++i)
         cas[i] = (((double)pcg32_random_r(&(state.rand_state)))/(double)UINT32_MAX)*1.0;
     memset(state.marker_has_been_correct_for_last, 0, sizeof(state.marker_has_been_correct_for_last));
+    state.all_markers_have_been_correct_for_last = 0;
 
     run_trials(&state, num_trials);
 }
