@@ -245,7 +245,7 @@ static void run_trials(state_t *state, uint_fast64_t n)
 {
     if (state->output_mode == OUTPUT_MODE_SUMMARY)
         output_summary(state);
-    else if (state->output_mode == OUTPUT_MODE_RANGE_SUMMARY)
+    else if (state->output_mode == OUTPUT_MODE_FULL)
         output_headings(state);
 
     uint_fast32_t card = 0;
