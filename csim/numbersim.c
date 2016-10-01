@@ -111,7 +111,6 @@ static bool update_state(state_t *state, unsigned marker_index, uint_fast32_t ca
         }
     }
 
-    printf("%u, %u, %llu\n", correct_for, state->max_cue, state->all_markers_have_been_correct_for_last);
     if (correct_for == state->max_cue) {
         ++(state->all_markers_have_been_correct_for_last);
     }
@@ -155,10 +154,6 @@ static void output_line(const state_t *state, int marker_index, uint_fast32_t ca
 
 static void output_summary(const state_t *state)
 {
-    for (unsigned i = 0; i < state->max_cue; ++i) {
-        printf("::%llu, %llu\n", state->marker_has_been_correct_for_last[i], state->all_markers_have_been_correct_for_last);
-    }
-
     // Output the number of trials which it took to get the right marker
     // for each cardinality for a sequence of at least the specified number of
     // trials.
@@ -179,7 +174,7 @@ static void output_summary(const state_t *state)
 
     // Output seed state for random number generator (so that subsequent runs
     // can use them as the starting point).
-    printf(",%llu,%llu\n\n", state->rand_state.state, state->rand_state.inc);
+    printf(",%llu,%llu\n", state->rand_state.state, state->rand_state.inc);
 }
 
 static void output_range_summary(const state_t *state)
