@@ -1,6 +1,6 @@
 This repository contains code for running the simulations described in 
 
-[Malouf, R., F. Ackerman & S. Seyfarth. 2015. Explaining the Number Hierarchy. Proceedings of the 37th Annual Cognitive Science Society Meeting, 1500-1506.](https://www.researchgate.net/publication/275657562_Explaining_the_Number_Hierarchy)
+[Malouf, R., F. Ackerman & S. Seyfarth. 2015. Explaining the Number Hierarchy. Proceedings of the 37th Annual Cognitive Science Society Meeting, 1500-1506.](http://idiom.ucsd.edu/~sseyfart/MaloufAckermanSeyfarth.pdf)
 
 The core of the simulation is the C program in `csim`. Build as follows:
 
