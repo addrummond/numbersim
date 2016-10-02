@@ -74,6 +74,7 @@ plot_data <- function () {
     ggplot(data=melted, aes(x=trial, y=fraction)) + geom_line(aes(id=language, color=language, linetype=language)) +
     xlab("Trial") +
     ylab("Fraction of learners successful") +
+    xlim(0,50) +
     scale_linetype_manual(values = c(rep("solid", 8), rep("longdash", 8), rep("dotted", 8))) +
     scale_colour_manual(values=c(cbbPalette,cbbPalette,cbbPalette));
 }

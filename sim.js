@@ -1,6 +1,7 @@
 "use strict";
 
 let child_process = require('child_process');
+let PcgRandom = require('./pcg-random');
 
 if (process.argv.length != 4 && process.argv.length != 5) {
     process.stderr.write("Bad arguments\n");
@@ -34,6 +35,8 @@ if (process.argv.length == 5) {
     }
 }
 
+let rand = new PcgRandom(options.seed1, options.seed2);
+
 let rd = new Float64Array(options.max_cardinality-1); // Declared outside of function to avoid allocation on every run.
 
 function factorial(n) {
@@ -60,9 +63,9 @@ function initZtnbDistribution(beta, r, rd) {
 }
 
 function initRandomDistribution(rd) {
-    let total = Math.random(); // The remaining probability mass for n=options.max_cardinality.
+    let total = rand.number(); // The remaining probability mass for n=options.max_cardinality.
     for (let i = 0; i < rd.length; ++i) {
-        let r = Math.random();
+        let r = rand.number();
         total += r;
         rd[i] = r;
     }
@@ -95,7 +98,7 @@ function initDirichletDistribution(rd)
 
     let tot = gamma(options.max_cardinality, 1, x);
     for (let i = 0; i < options.max_cardinality-1 && i < rd.length; ++i) {
-        let x = parseInt(Math.round(Math.random()*options.max_cardinality)) + 1;
+        let x = parseInt(Math.round(rand.number()*options.max_cardinality)) + 1;
         let v = gamma(options.max_cardinality, 1, x);
         rd[i] = v;
         tot += v;
