@@ -65,7 +65,7 @@ typedef struct state {
     unsigned quit_after_n_correct;
 } state_t;
 
-static void update_state_helper(state_t *state, unsigned marker_index, uint_fast32_t cardinality, double l)
+static void update_state_for_marker(state_t *state, unsigned marker_index, uint_fast32_t cardinality, double l)
 {
     double vax = 0;
     for (unsigned i = 0; i <= cardinality; ++i) {
@@ -82,9 +82,8 @@ static void update_state_helper(state_t *state, unsigned marker_index, uint_fast
 
 static bool update_state(state_t *state, unsigned marker_index, uint_fast32_t cardinality)
 {
-    //printf("UPD marker=%u, card=%u\n", marker_index, cardinality);
     for (unsigned i = 0; i < state->language.num_markers; ++i) {
-        update_state_helper(state, i, cardinality, i == marker_index ? 1.0 : 0.0);
+        update_state_for_marker(state, i, cardinality, i == marker_index ? 1.0 : 0.0);
     }
 
     unsigned correct_for = 0;
@@ -92,7 +91,7 @@ static bool update_state(state_t *state, unsigned marker_index, uint_fast32_t ca
         double max_sum = 0.0;
         unsigned max_sum_marker_index;
         for (unsigned j = 0; j < state->language.num_markers; ++j) {
-            double sum = 0;
+            double sum = 0.0;
             for (unsigned k = 0; k <= i; ++k)
                 sum += state->assocs[k][j];
             if (sum > max_sum) {
