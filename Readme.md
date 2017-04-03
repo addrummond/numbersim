@@ -11,8 +11,9 @@ Various "languages" (i.e. number systems) are defined and named in the file `lan
 
 This program is called by the NodeJS wrapper script sim.js. E.g.:
 
-    node sim.js '1,o' multisim '{"seed1":200,"seed2":300}'
+    node sim.js '1,o' multisim '{"seed1":2000,"seed2":3000}'
 
-Random numbers are generated using the PCG algorithm.
+Random numbers are generated using the PCG algorithm. Results can therefore
+be deterministically reproduced for a given random seed. 
 
 There is code for producing plots in `plot.R`. 
