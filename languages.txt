@@ -1,18 +1,4 @@
-1,o        s 1 pl *
-12,o       m 1 2 pl *
-123,o      m 1 2 3 pl *
-1234,o     m 1 2 3 4 pl *
-12345,o    m 1 2 3 4 5 pl *
-2,o        m 2 o *
-3,o        m 3 o *
-4,o        m 4 o *
-5,o        m 5 o *
-2,3,o      m 2 3 o *
-3,4,o      m 3 4 o *
-4,5,o      m 4 5 o *
-2,3,4,o    m 2 3 4 o *
-3,4,5,o    m 3 4 5 o *
-1,2,o      m 1 2 o *
-1,23,o     s 1 m 2 3 o *
-1,234,o    s 1 m 2 3 4 o *
-1,2345,o   s 1 m 2 3 4 5 o *
+sing:pl       s 1 pl *
+sing:dual:pl  s 1 d 2 pl *
+dual:nondual  d 2 nd *
+sing:pauc:pl  s 1 pauc 2 3 4 pl *

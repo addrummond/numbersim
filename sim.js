@@ -11,10 +11,8 @@ let language = process.argv[2];
 let program = process.argv[3];
 let options = {
     max_cardinality: 7,
-    beta: 0.6,
-    r: 3,
     learning_rate: 0.01,
-    n_distributions: 10000,
+    n_distributions: 1000,
     n_runs: 1000,
     seed1: parseInt(Math.random()*Math.pow(2,64)),
     seed2: parseInt(Math.random()*Math.pow(2,64)),

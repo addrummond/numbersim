@@ -3,51 +3,21 @@ require("ggplot2");
 
 cbbPalette <- c("#56B4E9", "#D55E00", "#000000", "#E69F00", "#009E73", "#F0E442", "#0072B2", "#CC79A7");
 
-seeds <- '\'{"seed1":200, "seed2": 300}\'';
-
 make_json <- function (distribution) {
-    paste('{"seed1":200,"seed2":300,"distribution":"', distribution, '"}', sep="");
+    paste('{"seed1":2000,"seed2":3000,"distribution":"', distribution, '"}', sep="");
 }
 
 languages <- c(
-    "1,o",
-    "12,o",
-    "123,o",
-    "1234,o",
-    "12345,o",
-    "2,o",
-    "3,o",
-    "4,o",
-    "5,o",
-    "2,3,o",
-    "3,4,o",
-    "4,5,o",
-    "2,3,4,o",
-    "3,4,5,o",
-    "1,2,o",
-    "1,23,o",
-    "1,234,o",
-    "1,2345,o"
+    "sing:pl",
+    "sing:dual:pl",
+    "dual:nondual",
+    "sing:pauc:pl"
 );
 attested <- c(
     TRUE,
-    FALSE,
-    FALSE,
-    FALSE,
-    FALSE,
-    FALSE,
-    FALSE,
-    FALSE,
-    FALSE,
-    FALSE,
-    FALSE,
-    FALSE,
-    FALSE,
-    FALSE,
     TRUE,
-    TRUE,
-    TRUE,
-    TRUE
+    FALSE,
+    FALSE
 );
 names(attested) <- languages;
 
@@ -74,7 +44,7 @@ plot_data <- function () {
     ggplot(data=melted, aes(x=trial, y=fraction)) + geom_line(aes(id=language, color=language, linetype=language)) +
     xlab("Trial") +
     ylab("Fraction of learners successful") +
-    xlim(0,50) +
+    xlim(0,300) +
     scale_linetype_manual(values = c(rep("solid", 8), rep("longdash", 8), rep("dotted", 8))) +
     scale_colour_manual(values=c(cbbPalette,cbbPalette,cbbPalette));
 }
