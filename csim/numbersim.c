@@ -455,10 +455,10 @@ static void run_given_arguments(int num_args, char **args)
 
     double *as = (double *)(state.assocs);
     for (unsigned i = 0; i < sizeof(state.assocs)/sizeof(state.assocs[0][0]); ++i)
-        as[i] = (((double)pcg32_random_r(&(state.rand_state)))/(double)UINT32_MAX)*1.0;
+        as[i] = 0.0;
     double *cas = (double *)state.compound_cue_assocs;
     for (unsigned i = 0; i < sizeof(state.compound_cue_assocs)/sizeof(state.compound_cue_assocs[0][0]); ++i)
-        cas[i] = (((double)pcg32_random_r(&(state.rand_state)))/(double)UINT32_MAX)*1.0;
+        cas[i] = 0.0;
     memset(state.marker_has_been_correct_for_last, 0, sizeof(state.marker_has_been_correct_for_last));
     state.all_markers_have_been_correct_for_last = 0;
 
