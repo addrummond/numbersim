@@ -6,10 +6,6 @@ require("doParallel")
 
 cbbPalette <- c("#56B4E9", "#D55E00", "#000000", "#E69F00", "#009E73", "#F0E442", "#0072B2", "#CC79A7");
 
-make_json <- function (distribution) {
-    paste('{"seed1":2000,"seed2":3000,"distribution":"', distribution, '"}', sep="");
-}
-
 languages <- c();
 pretty_languages <- c();
 attested <- c();
@@ -38,7 +34,11 @@ gen_data <- function (distribution) {
     cl <- makeCluster(cores,outfile="");
     registerDoParallel(cl, cores=cores);
 
-    foreach(i = 1:length(languages), .export=c("languages", "make_json"), .combine=rbind) %dopar% {
+    foreach(i = 1:length(languages), .export=c("languages"), .combine=rbind) %dopar% {
+        make_json <- function (distribution) {
+            paste('{"seed1":2000,"seed2":3000,"distribution":"', distribution, '"}', sep="");
+        }
+
         l <- languages[i];
         cmd <- paste("node sim.js '", l, "' multisim '", make_json(distribution), "' > ", "'multisim_", l, ".csv'", sep="");
         cat(paste(cmd, "\n", sep=""));
