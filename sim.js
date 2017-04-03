@@ -297,7 +297,7 @@ numbersim.stdout.on('data', (data) => {
 
     for (; currentBufferIndex < currentBuffer.length; ++currentBufferIndex) {
         if (currentBuffer.charAt(currentBufferIndex) == '\n') {
-            var left = currentBuffer.substr(1, currentBufferIndex);
+            var left = currentBuffer.substr(0, currentBufferIndex);
             var right = currentBuffer.substr(currentBufferIndex+1);
             currentBuffer = right;
             currentBufferIndex = 0;
