@@ -1,4 +1,6 @@
-sing:pl       s 1 pl *
-sing:dual:pl  s 1 d 2 pl *
-dual:nondual  d 2 nd *
-sing:pauc:pl  s 1 pauc 2 3 4 pl *
+a_sing:pl       s 1 pl *
+a_sing:dual:pl  s 1 d 2 pl *
+dual:nondual    d 2 nd *
+a_sing:pauc:pl  s 1 pauc 2 3 4 pl *
+2,3,o           m 2 3 o *
+1,2,f,o         m 1 2 f 3 4 o *
